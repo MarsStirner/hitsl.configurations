@@ -1,0 +1,374 @@
+common:
+  mis_database: &SQLALCHEMY mysql+cymysql://tmis:q1w2e3r4t5@/hospital1_risar?charset=utf8
+
+  uwsgi_apps: &UWSGI_APPS
+    CASTIEL_AUTH_TOKEN: &CASTIEL_AUTH_TOKEN CastielAuthToken
+    HIPPO_URL: &HIPPO_URL http://127.0.0.1:6600/
+    CAESAR_URL: &CAESAR_URL http://127.0.0.1:6601/
+    PRINT_SUBSYSTEM_URL: http://10.1.2.11:6601/print_subsystem/
+    COLDSTAR_URL: &COLDSTAR_URL http://10.1.2.11:6605/
+    SIMARGL_URL: *COLDSTAR_URL # по умолчанию запускаем Симаргл внутри Колдыря
+    SCANSERVER_URL: *COLDSTAR_URL # сканер - тоже
+    VESTA_URL: &VESTA_URL http://127.0.0.1:6604/
+    TSUKINO_USAGI_URL: &TSUKINO_USAGI_URL http://127.0.0.1:6602/
+    SIMPLELOGS_URL: &SIMPLELOGS_URL http://127.0.0.1:6604/
+    IRON_URN_URL: &IRON_URN_URL http://127.0.0.1:6609/
+
+    SQLALCHEMY_TRACK_MODIFICATIONS: false
+
+  user_apps: &USER_APPS
+    TRFU_URL: ""
+    WEBMIS10_URL: ""
+    SEARCHD_CONNECTION: &SEARCHD_CONNECTION
+      host: 127.0.0.1
+      port: 9306
+
+    DEBUG: True
+    PROFILE: False
+    TITLE: WebMIS 2.0
+    COPYRIGHT_COMPANY: БАРС Групп
+    LPU_STYLE: ""
+    ORGANISATION_INFIS_CODE: 500
+    BABEL_DEFAULT_LOCALE: ru_RU
+    TIME_ZONE: Europe/Moscow
+
+deployment:
+#  base_dir: /home/mmalkov/workspace/hitsl.configurarions
+  prefix: infra
+  uwsgi_template: |
+    [uwsgi]
+    virtualenv={{ deployment.base_dir }}/venv
+
+    vacuum
+    reaper
+
+    pythonpath={{ deployment.base_dir }}/code/tsukino_usagi
+
+    env=TSUKINO_USAGI_URL={{ common.uwsgi_apps.TSUKINO_USAGI_URL }}
+
+    chdir = {{ deployment.base_dir }}
+    socket = /var/run/uwsgi/app/{{ deployment.prefix }}_{{ this.name }}/uwsgi.sock
+    pidfile= /var/run/uwsgi/app/{{ deployment.prefix }}_{{ this.name }}/pid
+
+    max-requests = 5000
+    buffer-size = 32768
+    harakiri = 120
+
+    # set mode of created UNIX socket
+    chmod-socket = 660
+
+    # place timestamps into log
+    log-date = true
+
+    # user identifier of uWSGI processes
+    uid = tmis
+    gid = www-data
+
+    {{ this.uwsgi.ext | recurse }}
+  nginx_template_uwsgi: |
+    server {
+      listen {{ this.nginx.port }};
+      rewrite_log on;
+      access_log {{ deployment.base_dir }}/logs/{{ this.name }}-access.log;
+      error_log  {{ deployment.base_dir }}/logs/{{ this.name }}-error.log;
+
+      location / {
+        uwsgi_cache_bypass 1;
+        uwsgi_no_cache 1;
+        include uwsgi_params;
+        uwsgi_pass unix:///var/run/uwsgi/app/{{ deployment.prefix }}_{{ this.name }}/uwsgi.sock;
+        uwsgi_buffers 8 128k;
+        uwsgi_read_timeout 300;
+        uwsgi_send_timeout 300;
+      }
+
+      location /static/ {
+        alias {{ deployment.base_url }}/venv/src/nemesis/nemesis/static/;
+      }
+
+      {{ this.nginx.ext | recurse }}
+
+    }
+
+
+
+subsystems:
+  # Пользовательские подсистемы
+  hippo: # Гиппократ (амбулатория)
+    uwsgi:
+      template: "{{ deployment.uwsgi_template | recurse }}"
+      ext: |
+        processes=4
+        lazy-apps=true
+
+        mule
+        mule
+        pythonpath={{ deployment.base_dir }}/code/hippocrates/hippocrates
+
+        module=wsgi
+        callable=app
+    nginx:
+      port: 6600
+      template: "{{ deployment.nginx_template_uwsgi | recurse }}"
+      ext: |
+        location /api/rb/ {
+            uwsgi_cache dynamic_cache_risar_dev;
+            uwsgi_cache_bypass $http_pragma;
+            uwsgi_cache_valid 200 301 302 304 5m;
+            uwsgi_cache_key "$request_method|$http_if_modified_since|$http_if_none_match|$host|$request_uri";
+            uwsgi_hide_header "Set-Cookie";
+            uwsgi_ignore_headers "Cache-Control" "Expires" "Set-Cookie" "X-Accel-Expires";
+            uwsgi_cache_use_stale error timeout invalid_header updating;
+            expires 1h;
+
+            add_header Pragma public;
+
+            add_header Debug-Status $upstream_cache_status;
+            add_header Debug-Expires $upstream_http_expires;
+            add_header Debug-Cache-Control $upstream_http_cache_control;
+
+            include uwsgi_params;
+            uwsgi_pass unix:///var/run/uwsgi/app/{{ deployment.prefix }}_{{ this.name }}/uwsgi.sock;
+            uwsgi_buffers 8 128k;
+        }
+
+    app: !inherit
+      ancestors:
+        - *UWSGI_APPS
+        - *USER_APPS
+
+      SQLALCHEMY_DATABASE_URI: *SQLALCHEMY
+      PROJECT_NAME: Hippocrates
+      TITLE: РИСАР
+      INDEX_HTML: hippo_index.html
+      # DEFAULT_ENDPOINT: risar.index_html
+      BEAKER_SESSION:
+        session.type: file
+        session.data_dir: /tmp/session/data
+        session.lock_dir: /tmp/session/lock
+        session.key: hippocrates.session.id
+      WSF_CSRF_ENABLED: True
+      SECRET_KEY: "Жил бы цитрус в чаще юга? Да! Но фальшивый экземпляр."
+    url: *HIPPO_URL
+
+  caesar: # Администрирование и подсистема печати
+    uwsgi:
+      template: "{{ deployment.uwsgi_template | recurse }}"
+      ext: |
+        processes=4
+        lazy-apps=true
+
+        mule
+        mule
+        pythonpath={{ deployment.base_dir }}/code/caesar/caesar
+
+        module=wsgi
+        callable=app
+    nginx:
+      port: 6601
+      template: "{{ deployment.nginx_template_uwsgi | recurse }}"
+      ext: |
+        location /print_subsystem/fonts/ {
+          alias {{ deployment.base_url }}/code/caesar/blueprints/print_subsystem/static/;
+        }
+
+    app: !inherit
+      ancestors:
+        - *UWSGI_APPS
+        - *USER_APPS
+
+      SQLALCHEMY_DATABASE_URI: *SQLALCHEMY
+      PROJECT_NAME: Hippocrates
+      TITLE: РИСАР
+      INDEX_HTML: hippo_index.html
+      # DEFAULT_ENDPOINT: risar.index_html
+      BEAKER_SESSION:
+        session.type: file
+        session.data_dir: /tmp/session/data
+        session.lock_dir: /tmp/session/lock
+        session.key: caesar.session.id
+      WSF_CSRF_ENABLED: True
+      SECRET_KEY: "A quick brown fox jumps over a lazy dog"
+    url: *CAESAR_URL
+
+  # Внутренние подсистемы
+
+  tsukino_usagi: # Подсистема конфигурирования подсистем
+    uwsgi:
+      template: "{{ deployment.uwsgi_template | recurse }}"
+      ext: |
+        processes=1
+
+        env=TSUKINO_USAGI_CONFIG={{ deployment.config_path }}
+        pythonpath={{ deployment.base_dir }}/code/tsukino_usagi
+
+        module=tsukino_usagi.wsgi
+        callable=app
+    nginx:
+      port: 6602
+      template: "{{ deployment.nginx_template_uwsgi | recurse }}"
+      ext:
+    app: !inherit
+      ancestors:
+        - *UWSGI_APPS
+      DEBUG: True
+      CACHE_TYPE: simple
+    url: *TSUKINO_USAGI_URL
+
+#  iron_urn: # Подсистема разрешения URN
+#    wsgi:
+#      template: "{{ deployment.uwsgi_template }}"
+#      ext: |
+#        processes=1
+#
+#        pythonpath={{ deployment.base_dir }}/code/iron_urn
+#
+#        module=iron_urn.wsgi
+#        callable=app
+#    nginx:
+#      port: 6609
+#      template: "{{ deployment.nginx_template_uwsgi }}"
+#    app: !inherit
+#      ancestors:
+#        - *UWSGI_APPS
+#    url: *IRON_URN_URL
+
+  vesta: # Подсистема справочников
+    uwsgi:
+      template: "{{ deployment.uwsgi_template | recurse }}"
+      ext: |
+        processes=2
+        lazy-apps=true
+
+        pythonpath={{ deployment.base_dir }}/code/nvesta
+
+        module=nvesta.wsgi
+        callable=app
+    nginx:
+      port: 6603
+      template: "{{ deployment.nginx_template_uwsgi | recurse }}"
+      ext:
+    app: !inherit
+      ancestors:
+        - *UWSGI_APPS
+    url: *VESTA_URL
+
+  simplelogs: # Подсистема журналирования
+    uwsgi:
+      template: "{{ deployment.uwsgi_template | recurse}}"
+      ext: |
+        processes=2
+        lazy-apps=true
+
+        pythonpath={{ deployment.base_dir }}/code/simplelogs
+
+        module=simplelogs.wsgi
+        callable=app
+
+    nginx:
+      port: 6604
+      template: "{{ deployment.nginx_template_uwsgi | recurse }}"
+      ext:
+
+    app: !inherit
+      ancestors:
+        - *UWSGI_APPS
+
+      MONGO_URI: mongodb://localhost/simplelogs
+    url: *SIMPLELOGS_URL
+
+  coldstar: # Подсистема всякой ерунды
+    supervisor:
+      template: |
+        [program:{{ deployment.prefix }}_{{ this.name }}]
+
+        command={{ deployment.base_dir }}/venv/bin/twistd -n bouser --config {{ common.uwsgi_apps.TSUKINO_USAGI_URL }}/{{ this.name }}
+        directory={{ deployment.base_dir }}
+        stdout_logfile={{ deployment.base_dir }}/logs/{{ this.name }}.log
+        stderr_logfile={{ deployment.base_dir }}/logs/{{ this.name }}.log
+        autostart=true
+        autorestart=true
+        startsecs=3
+        stopwaitsecs=6
+        environment=VIRTUAL_ENV={{ deployment.base_dir }}/venv
+
+        user=tmis
+        group=www-data
+    nginx:
+      port: 6605
+      template: |
+        server {
+          listen {{ this.nginx.port }};
+
+          rewrite_log on;
+          autoindex on;
+          access_log {{ deployment.base_dir }}/logs/{{ this.name }}-access.log;
+          error_log  {{ deployment.base_dir }}/logs/{{ this.name }}-error.log;
+
+          tcp_nodelay on;
+          sendfile on;
+          tcp_nopush on;
+
+          gzip on;
+          gzip_http_version 1.1;
+          gzip_min_length  1100;
+          gzip_disable "MSIE [1-6]\.(?!.*SV1)";
+          gzip_vary on;
+          gzip_proxied any;
+          gzip_comp_level 6;
+          gzip_buffers 16 8k;
+          gzip_types text/plain text/css application/json application/x-javascript text/xml application/xml application/xml+rs
+
+          location / {
+            proxy_pass http://localhost:7997/;
+            include proxy_params;
+            proxy_set_header Connection '';
+            proxy_http_version 1.1;
+            chunked_transfer_encoding off;
+            proxy_buffering off;
+            proxy_cache off;
+            proxy_connect_timeout 600s;
+            proxy_read_timeout 600s;
+          }
+        }
+
+    app:
+      module:
+        bouser.ext.db: # База данных
+          url: *SQLALCHEMY
+        bouser.web: # Веб-интерфейс
+          allowed-domains:
+            - http://10.1.2.11:7998
+            # - http://mis.hitsl.local:5000
+          cors-domain: http://10.1.2.11:7998
+          # host: 127.0.0.1
+          # port: 5001
+          # static-path: src/coldstar/web/static
+          strport: tcp:7997:127.0.0.1
+          # template-path: src/coldstar/web/templates
+        bouser.castiel: # Аутентификация
+          cookie_name: *CASTIEL_AUTH_TOKEN
+          cookie_domain: 10.1.2.11
+          clean_period: 10
+          expiry_time: 3600
+          domain_map: {}
+        bouser.ext.hitsl.castiel.auth.mis: # Адаптер аутентификации для ТМИС
+
+        bouser.ext.ezekiel: # Блокировки
+          short_timeout: 25
+        bouser.ext.ezekiel.eventsource:
+          keep-alive: 60
+        bouser.ext.ezekiel.rest:
+
+        bouser.ext.hitsl.scanner: # Сканирование
+        bouser.ext.hitsl.scanner.resource:
+
+        bouser.ext.hitsl.schedule_manager: # Задачи
+          mixins:
+            - bouser.ext.hitsl.errands.sm_task.errand_statuses
+
+        bouser.ext.simargl: # Уведомления
+          config: /srv/infrastructure/simargl.conf
+
+        # bouser.ext.ws: # WebSockets
+
