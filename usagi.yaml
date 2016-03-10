@@ -33,10 +33,11 @@ common:
     TIME_ZONE: Europe/Moscow
 
 deployment:
-#  base_dir: /home/mmalkov/workspace/hitsl.configurarions
+  base_dir: /srv/infrastructure
   prefix: infra
   uwsgi_template: |
     [uwsgi]
+    plugin = python
     virtualenv={{ deployment.base_dir }}/venv
 
     vacuum
@@ -46,9 +47,11 @@ deployment:
 
     env=TSUKINO_USAGI_URL={{ common.uwsgi_apps.TSUKINO_USAGI_URL }}
 
-    chdir = {{ deployment.base_dir }}
-    socket = /var/run/uwsgi/app/{{ deployment.prefix }}_{{ this.name }}/uwsgi.sock
-    pidfile= /var/run/uwsgi/app/{{ deployment.prefix }}_{{ this.name }}/pid
+    chdir     = {{ deployment.base_dir }}
+    socket    = {{ deployment.base_dir }}/uwsgi/{{ this.name }}.uwsgi.sock
+    pidfile   = {{ deployment.base_dir }}/uwsgi/{{ this.name }}.pid
+    logto     = {{ deployment.base_dir }}/logs/{{ this.name }}-uwsgi.log
+    daemonize = {{ deployment.base_dir }}/logs/{{ this.name }}-uwsgi.log
 
     max-requests = 5000
     buffer-size = 32768
@@ -61,11 +64,12 @@ deployment:
     log-date = true
 
     # user identifier of uWSGI processes
-    uid = tmis
-    gid = www-data
+    uid = user_risar
+    gid = user_risar
 
     {{ this.uwsgi.ext | recurse }}
   nginx_template_uwsgi: |
+    {{ this.nginx.prepend | recurse }}
     server {
       listen {{ this.nginx.port }};
       rewrite_log on;
@@ -76,14 +80,14 @@ deployment:
         uwsgi_cache_bypass 1;
         uwsgi_no_cache 1;
         include uwsgi_params;
-        uwsgi_pass unix:///var/run/uwsgi/app/{{ deployment.prefix }}_{{ this.name }}/uwsgi.sock;
+        uwsgi_pass unix://{{ deployment.base_dir }}/uwsgi/{{ this.name }}.uwsgi.sock;
         uwsgi_buffers 8 128k;
         uwsgi_read_timeout 300;
         uwsgi_send_timeout 300;
       }
 
       location /static/ {
-        alias {{ deployment.base_url }}/venv/src/nemesis/nemesis/static/;
+        alias {{ deployment.base_dir }}/venv/src/nemesis/nemesis/static/;
       }
 
       {{ this.nginx.ext | recurse }}
@@ -110,9 +114,11 @@ subsystems:
     nginx:
       port: 6600
       template: "{{ deployment.nginx_template_uwsgi | recurse }}"
+      prepend: |
+        uwsgi_cache_path /var/cache/nginx/{{ deployment.prefix }}/ levels=1:2 keys_zone={{ deployment.prefix }}_hippo:100m inactive=120m max_size=200M;
       ext: |
         location /api/rb/ {
-            uwsgi_cache dynamic_cache_risar_dev;
+            uwsgi_cache {{ deployment.prefix }}_hippo;
             uwsgi_cache_bypass $http_pragma;
             uwsgi_cache_valid 200 301 302 304 5m;
             uwsgi_cache_key "$request_method|$http_if_modified_since|$http_if_none_match|$host|$request_uri";
@@ -169,7 +175,7 @@ subsystems:
       template: "{{ deployment.nginx_template_uwsgi | recurse }}"
       ext: |
         location /print_subsystem/fonts/ {
-          alias {{ deployment.base_url }}/code/caesar/blueprints/print_subsystem/static/;
+          alias {{ deployment.base_dir }}/code/caesar/blueprints/print_subsystem/static/;
         }
 
     app: !inherit
@@ -200,7 +206,7 @@ subsystems:
         processes=1
 
         env=TSUKINO_USAGI_CONFIG={{ deployment.config_path }}
-        pythonpath={{ deployment.base_dir }}/code/tsukino_usagi
+        # pythonpath={{ deployment.base_dir }}/code/tsukino_usagi
 
         module=tsukino_usagi.wsgi
         callable=app
@@ -317,7 +323,7 @@ subsystems:
           gzip_proxied any;
           gzip_comp_level 6;
           gzip_buffers 16 8k;
-          gzip_types text/plain text/css application/json application/x-javascript text/xml application/xml application/xml+rs
+          gzip_types text/plain text/css application/json application/x-javascript text/xml application/xml application/xml+rss text/javascript;
 
           location / {
             proxy_pass http://localhost:7997/;

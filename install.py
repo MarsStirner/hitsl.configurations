@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 import os
 import sys
@@ -9,8 +10,10 @@ import loader
 __author__ = 'viruzzz-kun'
 
 parser = argparse.ArgumentParser(description=u'Установщик среды', prog='install.py')
-parser.add_argument('--config', required=True)
-args = parser.parse_args(sys.argv)
+parser.add_argument('config', help=u'Файл конфигурации')
+# parser.add_argument('--deps', required=False, action='store_const', const=True, default=False, help=u'Установить зависимости')
+# parser.add_argument('--apps', required=False, action='store_const', const=True, default=False, help=u'Скачать и установить приложения')
+args = parser.parse_args(sys.argv[1:])
 
 
 def safe_make_dirs(path):
@@ -21,18 +24,19 @@ def safe_make_dirs(path):
 
 
 def main():
-    base_dir = os.path.dirname(__file__)
+    with open(args.config, 'r') as fin:
+        config = yaml.load(fin, Loader=loader.ConfigLoader)
+
+    base_dir = config['deployment']['base_dir']
+    safe_make_dirs(base_dir)
     safe_make_dirs(os.path.join(base_dir, 'code'))
     safe_make_dirs(os.path.join(base_dir, 'configs'))
     safe_make_dirs(os.path.join(base_dir, 'configs', 'uwsgi'))
     safe_make_dirs(os.path.join(base_dir, 'configs', 'nginx'))
     safe_make_dirs(os.path.join(base_dir, 'configs', 'supervisor'))
 
-    with open(args.config, 'r') as fin:
-        config = yaml.load(fin, Loader=loader.ConfigLoader)
-
-    config['deployment']['base_dir'] = base_dir
-    config['deployment']['config_path'] = os.path.join(base_dir, args.config)
+    config['deployment'].setdefault('base_dir', base_dir)
+    config['deployment']['config_path'] = os.path.join(os.getcwdu(), args.config)
 
     def make_filename(this, subdir, ext):
         basename = '%s_%s.%s' % (config['deployment']['prefix'], this['name'], ext)
@@ -52,7 +56,6 @@ def main():
     for name, this in config['subsystems'].iteritems():
         this['name'] = name
 
-
         if 'uwsgi' in this:
             print name, 'uwsgi'
             template = jinja_env.from_string(this['uwsgi']['template'])
@@ -68,7 +71,7 @@ def main():
         if 'supervisor' in this:
             print name, 'supervisor'
             template = jinja_env.from_string(this['supervisor']['template'])
-            with open(make_filename(this, 'supervisor', 'conf'), 'w') as fout:
+            with open(make_filename(this, 'supervisor', 'ini'), 'w') as fout:
                 fout.write(template.render(config, this=this))
 
 if __name__ == "__main__":
