@@ -31,6 +31,7 @@ common:
     ORGANISATION_INFIS_CODE: 500
     BABEL_DEFAULT_LOCALE: ru_RU
     TIME_ZONE: Europe/Moscow
+    CELERY_ENABLED: false
 
 deployment:
   base_dir: /srv/infrastructure
@@ -257,6 +258,18 @@ subsystems:
     app: !inherit
       ancestors:
         - *UWSGI_APPS
+      MONGO_HOST: 10.1.2.11
+      MONGO_PORT: 27017
+      MONGO_USERNAME: ''
+      MONGO_PASSWORD: ''
+      MONGO_DBNAME: nvesta
+
+      SIMPLELOGS_URL: http://127.0.0.1:8080
+      NSI_SOAP: http://nsi.rosminzdrav.ru/wsdl/SOAP-server.v2.php?wsdl
+      NSI_TOKEN: d6ba79b126957042a471f8b9d880c978
+
+      CACHE_TYPE: filesystem
+      CACHE_DIR: /tmp/cache/nvesta
     url: *VESTA_URL
 
   simplelogs: # Подсистема журналирования
