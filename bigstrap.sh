@@ -26,6 +26,7 @@ git clone https://stash.bars-open.ru/scm/medvtr/nvesta.git code/nvesta
 git clone https://stash.bars-open.ru/scm/medvtr/coldstar.bouser.git code/coldstar.bouser
 
 # 4. Установить зависимости
+pip install git+https://github.com/hitsl/hitsl.utils.git@develop#egg=hitsl_utils
 pip install -r hippocrates/requirements/_base.txt
 pip install -r caesar/requirements/_base.txt
 
