@@ -1,12 +1,12 @@
 common:
-  mis_database: &SQLALCHEMY mysql+cymysql://tmis:q1w2e3r4t5@/hospital1_risar?charset=utf8
+  mis_database: &SQLALCHEMY mysql+cymysql://tmis:q1w2e3r4t5@127.0.0.1/hospital1_risar?charset=utf8
 
   uwsgi_apps: &UWSGI_APPS
-    CASTIEL_AUTH_TOKEN: &CASTIEL_AUTH_TOKEN CastielAuthToken
+    CASTIEL_AUTH_TOKEN: &CASTIEL_AUTH_TOKEN CastielAuthToken  # authToken
     HIPPO_URL: &HIPPO_URL http://127.0.0.1:6600/
     CAESAR_URL: &CAESAR_URL http://127.0.0.1:6601/
-    PRINT_SUBSYSTEM_URL: http://10.1.2.11:6601/print_subsystem/
-    COLDSTAR_URL: &COLDSTAR_URL http://10.1.2.11:6605/
+    PRINT_SUBSYSTEM_URL: http://127.0.0.1:6601/print_subsystem/
+    COLDSTAR_URL: &COLDSTAR_URL http://127.0.0.1:6605/
     SIMARGL_URL: *COLDSTAR_URL # по умолчанию запускаем Симаргл внутри Колдыря
     SCANSERVER_URL: *COLDSTAR_URL # сканер - тоже
     VESTA_URL: &VESTA_URL http://127.0.0.1:6604/
@@ -15,6 +15,7 @@ common:
     IRON_URN_URL: &IRON_URN_URL http://127.0.0.1:6609/
 
     SQLALCHEMY_TRACK_MODIFICATIONS: false
+    SQLALCHEMY_ECHO: false
 
   user_apps: &USER_APPS
     TRFU_URL: ""
@@ -26,12 +27,13 @@ common:
     DEBUG: True
     PROFILE: False
     TITLE: WebMIS 2.0
-    COPYRIGHT_COMPANY: БАРС Групп
+    COPYRIGHT_COMPANY: БАРС Груп
     LPU_STYLE: ""
     ORGANISATION_INFIS_CODE: 500
     BABEL_DEFAULT_LOCALE: ru_RU
     TIME_ZONE: Europe/Moscow
     CELERY_ENABLED: false
+
 
 deployment:
   base_dir: /srv/infrastructure
@@ -96,9 +98,10 @@ deployment:
     }
 
 
-
 subsystems:
+
   # Пользовательские подсистемы
+
   hippo: # Гиппократ (амбулатория)
     uwsgi:
       template: "{{ deployment.uwsgi_template | recurse }}"
@@ -185,8 +188,8 @@ subsystems:
         - *USER_APPS
 
       SQLALCHEMY_DATABASE_URI: *SQLALCHEMY
-      PROJECT_NAME: Hippocrates
-      TITLE: РИСАР
+      PROJECT_NAME: Caesar
+      TITLE: Caesar
       INDEX_HTML: hippo_index.html
       # DEFAULT_ENDPOINT: risar.index_html
       BEAKER_SESSION:
@@ -258,7 +261,7 @@ subsystems:
     app: !inherit
       ancestors:
         - *UWSGI_APPS
-      MONGO_HOST: 10.1.2.11
+      MONGO_HOST: 127.0.0.1
       MONGO_PORT: 27017
       MONGO_USERNAME: ''
       MONGO_PASSWORD: ''
@@ -266,7 +269,7 @@ subsystems:
 
       SIMPLELOGS_URL: http://127.0.0.1:8080
       NSI_SOAP: http://nsi.rosminzdrav.ru/wsdl/SOAP-server.v2.php?wsdl
-      NSI_TOKEN: d6ba79b126957042a471f8b9d880c978
+      NSI_TOKEN: ''
 
       CACHE_TYPE: filesystem
       CACHE_DIR: /tmp/cache/nvesta
@@ -357,17 +360,17 @@ subsystems:
           url: *SQLALCHEMY
         bouser.web: # Веб-интерфейс
           allowed-domains:
-            - http://10.1.2.11:7998
+            - http://127.0.0.1:7998
             # - http://mis.hitsl.local:5000
-          cors-domain: http://10.1.2.11:7998
+          cors-domain: http://127.0.0.1:7998
           # host: 127.0.0.1
           # port: 5001
           # static-path: src/coldstar/web/static
-          strport: tcp:7997:127.0.0.1
+          strport: tcp:6605:127.0.0.1
           # template-path: src/coldstar/web/templates
         bouser.castiel: # Аутентификация
           cookie_name: *CASTIEL_AUTH_TOKEN
-          cookie_domain: 10.1.2.11
+          cookie_domain: 127.0.0.1
           clean_period: 10
           expiry_time: 3600
           domain_map: {}
@@ -387,7 +390,31 @@ subsystems:
             - bouser.ext.hitsl.errands.sm_task.errand_statuses
 
         bouser.ext.simargl: # Уведомления
-          config: /srv/infrastructure/simargl.conf
+          # config: /srv/infrastructure/simargl.conf
+          print:
+            module: bouser.ext.simargl.clients.console
+          es:
+            module: bouser.ext.simargl.clients.eventsource
+          rpc:
+            module: bouser.ext.simargl.clients.rpc
+          db:
+            module: bouser.ext.simargl.clients.db
+          heartbeat:
+            module: bouser.ext.simargl.clients.heartbeat
+          mailer:
+            module: bouser.ext.hitsl.simargl.clients.mailer
+          errands:
+            module: bouser.ext.hitsl.errands.simargl_client
+          subscriptions:
+            module: bouser.ext.hitsl.simargl.clients.user_subscriptions
+#          sclient:
+#            module: bouser.ext.simarg.simargl_client
+#             host: localhost
+#             port: 9667
+#          sserver:
+#            module: bouser.ext.simargl.simargl_server
+#            host: localhost
+#            port: 9667
 
         # bouser.ext.ws: # WebSockets
 
