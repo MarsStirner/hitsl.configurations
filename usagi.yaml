@@ -138,7 +138,7 @@ subsystems:
             add_header Debug-Cache-Control $upstream_http_cache_control;
 
             include uwsgi_params;
-            uwsgi_pass unix:///var/run/uwsgi/app/{{ deployment.prefix }}_{{ this.name }}/uwsgi.sock;
+            uwsgi_pass unix://{{ deployment.base_dir }}/uwsgi/{{ this.name }}.uwsgi.sock;
             uwsgi_buffers 8 128k;
         }
 
@@ -342,7 +342,7 @@ subsystems:
           gzip_types text/plain text/css application/json application/x-javascript text/xml application/xml application/xml+rss text/javascript;
 
           location / {
-            proxy_pass http://localhost:7997/;
+            proxy_pass http://localhost:6097/;
             include proxy_params;
             proxy_set_header Connection '';
             proxy_http_version 1.1;
@@ -366,7 +366,7 @@ subsystems:
           # host: 127.0.0.1
           # port: 5001
           # static-path: src/coldstar/web/static
-          strport: tcp:6605:127.0.0.1
+          strport: tcp:6097:127.0.0.1
           # template-path: src/coldstar/web/templates
         bouser.castiel: # Аутентификация
           cookie_name: *CASTIEL_AUTH_TOKEN
@@ -391,30 +391,31 @@ subsystems:
 
         bouser.ext.simargl: # Уведомления
           # config: /srv/infrastructure/simargl.conf
-          print:
-            module: bouser.ext.simargl.clients.console
-          es:
-            module: bouser.ext.simargl.clients.eventsource
-          rpc:
-            module: bouser.ext.simargl.clients.rpc
-          db:
-            module: bouser.ext.simargl.clients.db
-          heartbeat:
-            module: bouser.ext.simargl.clients.heartbeat
-          mailer:
-            module: bouser.ext.hitsl.simargl.clients.mailer
-          errands:
-            module: bouser.ext.hitsl.errands.simargl_client
-          subscriptions:
-            module: bouser.ext.hitsl.simargl.clients.user_subscriptions
-#          sclient:
-#            module: bouser.ext.simarg.simargl_client
-#             host: localhost
-#             port: 9667
-#          sserver:
-#            module: bouser.ext.simargl.simargl_server
-#            host: localhost
-#            port: 9667
+          config:
+            print:
+              module: bouser.ext.simargl.clients.console
+            es:
+              module: bouser.ext.simargl.clients.eventsource
+            rpc:
+              module: bouser.ext.simargl.clients.rpc
+            db:
+              module: bouser.ext.simargl.clients.db
+            heartbeat:
+              module: bouser.ext.simargl.clients.heartbeat
+            mailer:
+              module: bouser.ext.hitsl.simargl.clients.mailer
+            errands:
+              module: bouser.ext.hitsl.errands.simargl_client
+            subscriptions:
+              module: bouser.ext.hitsl.simargl.clients.user_subscriptions
+#            sclient:
+#              module: bouser.ext.simarg.simargl_client
+#               host: localhost
+#               port: 9667
+#            sserver:
+#              module: bouser.ext.simargl.simargl_server
+#              host: localhost
+#              port: 9667
 
         # bouser.ext.ws: # WebSockets
 

@@ -15,7 +15,7 @@ pip install pip setuptools --upgrade
 pip install pyyaml jinja2
 
 # 3. Склонировать сервисы
-git clone https://stash.bars-open.ru/scm/medvtr/hitsl.configurarions.git configurations
+git clone https://stash.bars-open.ru/scm/medvtr/hitsl.configurations.git configurations
 
 git clone https://stash.bars-open.ru/scm/medvtr/hippocrates.git -b RISAR code/hippocrates
 git clone https://stash.bars-open.ru/scm/medvtr/caesar.git -b develop code/caesar
