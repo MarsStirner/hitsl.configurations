@@ -34,6 +34,7 @@ def main():
     safe_make_dirs(os.path.join(base_dir, 'configs', 'uwsgi'))
     safe_make_dirs(os.path.join(base_dir, 'configs', 'nginx'))
     safe_make_dirs(os.path.join(base_dir, 'configs', 'supervisor'))
+    safe_make_dirs(os.path.join(base_dir, 'configs', 'sphinx'))
 
     config['deployment'].setdefault('base_dir', base_dir)
     config['deployment']['config_path'] = os.path.join(os.getcwdu(), args.config)
@@ -72,6 +73,12 @@ def main():
             print name, 'supervisor'
             template = jinja_env.from_string(this['supervisor']['template'])
             with open(make_filename(this, 'supervisor', 'ini'), 'w') as fout:
+                fout.write(template.render(config, this=this))
+
+        if 'sphinx' in this:
+            print name, 'sphinx'
+            template = jinja_env.from_string(this['sphinx']['template'])
+            with open(make_filename(this, 'sphinx', 'conf'), 'w') as fout:
                 fout.write(template.render(config, this=this))
 
 if __name__ == "__main__":

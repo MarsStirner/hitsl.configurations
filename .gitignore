@@ -59,8 +59,11 @@ docs/_build/
 # PyBuilder
 target/
 
+.idea/
+
 code/
 configs/
 logs/
+venv/
 
 usagi.local.yaml
