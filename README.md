@@ -31,7 +31,7 @@ hitsl.configurations
     * simplelogs - внутренняя подсистема логирования
     * nvesta - внутренняя подсистема справочников
     * coldstar.bouser - разные внутренние подсистемы для аутентификации, блокировок и пр.
-5. Скопировать шаблон конфигурационного файла приложения из hitsl.configurations в текущую директирию `cp hitsl.configurations/usagi.yaml usage_local.yaml`
+5. Скопировать шаблон конфигурационного файла приложения из hitsl.configurations в текущую директирию `cp hitsl.configurations/usagi.yaml usagi_local.yaml`
 6. Внести исправления в файл конфига
 7. Сгенерировать конфигурационные файлы для uwsgi, nginx, supervisor через скрипт hitsl.configurations/install.py
 (предварительно активировать виртуальное окружение `source venv/bin/activate`)

@@ -9,7 +9,7 @@ common:
     COLDSTAR_URL: &COLDSTAR_URL http://127.0.0.1:6605/
     SIMARGL_URL: *COLDSTAR_URL # по умолчанию запускаем Симаргл внутри Колдыря
     SCANSERVER_URL: *COLDSTAR_URL # сканер - тоже
-    VESTA_URL: &VESTA_URL http://127.0.0.1:6604/
+    VESTA_URL: &VESTA_URL http://127.0.0.1:6603/
     TSUKINO_USAGI_URL: &TSUKINO_USAGI_URL http://127.0.0.1:6602/
     SIMPLELOGS_URL: &SIMPLELOGS_URL http://127.0.0.1:6604/
     IRON_URN_URL: &IRON_URN_URL http://127.0.0.1:6609/
@@ -52,7 +52,7 @@ deployment:
 
     chdir     = {{ deployment.base_dir }}
     socket    = {{ deployment.base_dir }}/uwsgi/{{ this.name }}.uwsgi.sock
-    pidfile   = {{ deployment.base_dir }}/uwsgi/{{ this.name }}.pid
+    pidfile2   = {{ deployment.base_dir }}/uwsgi/{{ this.name }}.pid
     logto     = {{ deployment.base_dir }}/logs/{{ this.name }}-uwsgi.log
     daemonize = {{ deployment.base_dir }}/logs/{{ this.name }}-uwsgi.log
 
@@ -190,7 +190,7 @@ subsystems:
       SQLALCHEMY_DATABASE_URI: *SQLALCHEMY
       PROJECT_NAME: Caesar
       TITLE: Caesar
-      INDEX_HTML: hippo_index.html
+      INDEX_HTML: caesar_index.html
       # DEFAULT_ENDPOINT: risar.index_html
       BEAKER_SESSION:
         session.type: file
@@ -267,7 +267,7 @@ subsystems:
       MONGO_PASSWORD: ''
       MONGO_DBNAME: nvesta
 
-      SIMPLELOGS_URL: http://127.0.0.1:8080
+      SIMPLELOGS_URL: *SIMPLELOGS_URL
       NSI_SOAP: http://nsi.rosminzdrav.ru/wsdl/SOAP-server.v2.php?wsdl
       NSI_TOKEN: ''
 
