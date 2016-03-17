@@ -31,8 +31,6 @@ uwsgi:
       vacuum
       reaper
 
-      pythonpath={{ deployment.base_dir }}/code/tsukino_usagi
-
       env=TSUKINO_USAGI_URL={{ common.uwsgi_apps.TSUKINO_USAGI_URL }}
 
       chdir     = {{ deployment.base_dir }}

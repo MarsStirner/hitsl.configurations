@@ -51,7 +51,7 @@ common:
 
 
 deployment:
-  base_dir: /srv/infrastructure
+  base_dir: .
   prefix: infra
 
 subsystems:
@@ -68,6 +68,7 @@ subsystems:
 
           mule
           mule
+          pythonpath={{ deployment.base_dir }}/code/hippocrates
           pythonpath={{ deployment.base_dir }}/code/hippocrates/hippocrates
           pythonpath={{ deployment.base_dir }}/code/hippocrates/  # temp
 
@@ -133,6 +134,7 @@ subsystems:
 
           mule
           mule
+          # pythonpath={{ deployment.base_dir }}/code/caesar
           pythonpath={{ deployment.base_dir }}/code/caesar/caesar
 
           module=wsgi
@@ -146,7 +148,7 @@ subsystems:
           }
 
           location /print_subsystem/fonts/ {
-            alias {{ deployment.base_dir }}/code/caesar/blueprints/print_subsystem/static/;
+            alias {{ deployment.base_dir }}/code/caesar/caesar/blueprints/print_subsystem/static/;
           }
 
     app: !inherit
@@ -178,7 +180,6 @@ subsystems:
           processes=1
 
           env=TSUKINO_USAGI_CONFIG={{ deployment.config_path }}
-          # pythonpath={{ deployment.base_dir }}/code/tsukino_usagi
 
           module=tsukino_usagi.wsgi
           callable=app
@@ -201,16 +202,15 @@ subsystems:
           processes=2
           lazy-apps=true
 
-          pythonpath={{ deployment.base_dir }}/code/nvesta
-
           module=nvesta.wsgi
           callable=app
       nginx:
         port: 6603
         template: "{{ configens.nginx.templates.uwsgi | recurse }}"
-        ext:
+        ext: |
           location /static/ {
-            alias {{ deployment.base_dir }}/code/nvesta/nvesta/static/;
+            # Возможно, стоит придумать другой вариант получения пути
+            alias {{ deployment.base_dir }}/venv/lib/python2.7/site-packages/nvesta/static/;
           }
 
 
@@ -238,8 +238,6 @@ subsystems:
         ext: |
           processes=2
           lazy-apps=true
-
-          pythonpath={{ deployment.base_dir }}/code/simplelogs
 
           module=simplelogs.wsgi
           callable=app
