@@ -5,7 +5,7 @@ import sys
 import yaml
 import jinja2
 import argparse
-import loader
+import tsukino_usagi.loader
 
 __author__ = 'viruzzz-kun'
 
@@ -25,18 +25,11 @@ def safe_make_dirs(path):
 
 def main():
     with open(args.config, 'r') as fin:
-        config = yaml.load(fin, Loader=loader.ConfigLoader)
+        config = yaml.load(fin, Loader=tsukino_usagi.loader.ConfigLoader)
 
-    base_dir = config['deployment']['base_dir']
-    safe_make_dirs(base_dir)
-    safe_make_dirs(os.path.join(base_dir, 'code'))
-    safe_make_dirs(os.path.join(base_dir, 'configs'))
-    safe_make_dirs(os.path.join(base_dir, 'configs', 'uwsgi'))
-    safe_make_dirs(os.path.join(base_dir, 'configs', 'nginx'))
-    safe_make_dirs(os.path.join(base_dir, 'configs', 'supervisor'))
-    safe_make_dirs(os.path.join(base_dir, 'configs', 'sphinx'))
+    base_dir = os.path.abspath(config['deployment']['base_dir'])
 
-    config['deployment'].setdefault('base_dir', base_dir)
+    config['deployment']['base_dir'] = base_dir
     config['deployment']['config_path'] = os.path.join(os.getcwdu(), args.config)
 
     def make_filename(this, subdir, ext):
@@ -56,31 +49,16 @@ def main():
 
     for name, this in config['subsystems'].iteritems():
         this['name'] = name
-
-        if 'uwsgi' in this:
-            print name, 'uwsgi'
-            template = jinja_env.from_string(this['uwsgi']['template'])
-            with open(make_filename(this, 'uwsgi', 'ini'), 'w') as fout:
+        for configen_name, configen_config in this.get('configens', []).iteritems():
+            configen_base_config = config['configens'].get(configen_name, {})
+            c_extension = configen_base_config.get('extension', configen_base_config.get('extension', 'conf'))
+            print name, configen_name
+            safe_make_dirs(os.path.join(base_dir, 'configs', configen_name))
+            template = jinja_env.from_string(configen_config['template'])
+            filename = make_filename(this, configen_name, c_extension)
+            with open(filename, 'w') as fout:
                 fout.write(template.render(config, this=this))
 
-        if 'nginx' in this:
-            print name, 'nginx'
-            template = jinja_env.from_string(this['nginx']['template'])
-            with open(make_filename(this, 'nginx', 'conf'), 'w') as fout:
-                fout.write(template.render(config, this=this))
-
-        if 'supervisor' in this:
-            print name, 'supervisor'
-            template = jinja_env.from_string(this['supervisor']['template'])
-            with open(make_filename(this, 'supervisor', 'ini'), 'w') as fout:
-                fout.write(template.render(config, this=this))
-
-        if 'sphinx' in this:
-            print name, 'sphinx'
-            template = jinja_env.from_string(this['sphinx']['template'])
-            with open(make_filename(this, 'sphinx', 'conf'), 'w') as fout:
-                fout.write(template.render(config, this=this))
 
 if __name__ == "__main__":
     main()
-    pass
