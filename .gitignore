@@ -65,5 +65,7 @@ code/
 configs/
 logs/
 venv/
+uwsgi/
+sphinx/
 
 usagi.local.yaml
