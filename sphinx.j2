@@ -404,15 +404,15 @@ indexer
 
 searchd
 {
-    listen          = {{ common.sphinx.SQHINXQL_PORT }}:mysql41
-    log         = /var/log/sphinxsearch/searchd_{{ deployment.prefix }}.log
-    query_log       = /var/log/sphinxsearch/query_{{ deployment.prefix }}.log
-    read_timeout        = 5
-    max_children        = 30
-    pid_file        = /var/run/sphinxsearch/searchd_{{ deployment.prefix }}.pid
+    listen          = {{ common.sphinx.SPHINXQL_PORT }}:mysql41
+    log             = {{ deployment.base_dir }}/logs/{{ this.name }}_searchd.log
+    query_log       = {{ deployment.base_dir }}/logs/{{ this.name }}_query.log
+    read_timeout    = 5
+    max_children    = 30
+    pid_file        = {{ deployment.base_dir }}/sphinx/{{ this.name }}.pid
     max_matches     = 1000
-    seamless_rotate     = 1
-    preopen_indexes     = 1
+    seamless_rotate = 1
+    preopen_indexes = 1
     unlink_old      = 1
     workers         = threads # for RT to work
     binlog_path     = /var/lib/sphinxsearch/data_{{ deployment.prefix }}

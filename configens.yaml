@@ -58,3 +58,5 @@ supervisor:
   extension: conf
 sphinx:
   extension: conf
+crontab:
+  extension: cron

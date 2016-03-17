@@ -38,8 +38,11 @@ hitsl.configurations
 1. Проверить полученные файлы
 1. По необходимости создать директории для системных сервисов и проверить права на доступ к ним
     * /var/cache/nginx
-    * /var/lib/sphinxsearch/data_{значение deployment.infra из usagi_local.yaml}
-1. Запустить системные сервисы (supervisord, uwsgi, nginx, sphinx...)
+    * /var/lib/sphinxsearch/data_{значение deployment.infra из usagi.local.yaml} (с правами для пользователя из usagi.local.yaml)
+    * /var/log/cron/ (с правами для пользователя из usagi.local.yaml)
+1. Запустить системные сервисы (supervisord, uwsgi, nginx, ...)
+    * при первом запуске при отсутствии индексов сфинкса необходимо выполнить `indexer --config <путь до директории проекта/configs/sphinx/*sphinx.conf> --rotate --all`
+    * вручную скорпировать настройки cron из `<путь до директории проекта/configs/crontab/*crontab.cron` в `crontab -e`
 
 
 # TODO
