@@ -8,8 +8,8 @@ hitsl.configurations
 
 Для сборки некоторых библиотек в системе должы стоять дополнительные пакеты:
 
-  * `$ sudo apt-get install build-essential libssl-dev libffi-dev python-dev`
-  * `$ sudo yum install gcc libffi-devel python-devel openssl-devel`
+  * `$ sudo apt-get install build-essential libssl-dev libffi-dev python-dev libxml2-dev libxslt-dev libmysqlclient-dev`
+  * `$ sudo yum install gcc libffi-devel python-devel openssl-devel libxml2-devel libxslt-devel libmysqlclient-devel`
 
 Установка использует запросы к git репозиториям. Рекомендуется настроить временное сохранение данных пользователя для
 доступа к репозиториям, например, через git credential helper
