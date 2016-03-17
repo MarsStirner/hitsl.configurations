@@ -69,6 +69,7 @@ subsystems:
           mule
           mule
           pythonpath={{ deployment.base_dir }}/code/hippocrates/hippocrates
+          pythonpath={{ deployment.base_dir }}/code/hippocrates/  # temp
 
           module=wsgi
           callable=app
@@ -382,17 +383,15 @@ subsystems:
         template: |
           [program:{{ deployment.prefix }}_{{ this.name }}]
 
-          command={{ deployment.base_dir }}/venv/bin/twistd -n bouser --config {{ common.uwsgi_apps.TSUKINO_USAGI_URL }}/{{ this.name }}
-          directory={{ deployment.base_dir }}
+          command=searchd --nodetach -c {{ deployment.base_dir }}/configs/sphinx/{{ deployment.prefix }}_sphinx.conf
           stdout_logfile={{ deployment.base_dir }}/logs/{{ this.name }}.log
           stderr_logfile={{ deployment.base_dir }}/logs/{{ this.name }}.log
           autostart=true
           autorestart=true
           startsecs=3
           stopwaitsecs=6
-          environment=VIRTUAL_ENV={{ deployment.base_dir }}/venv
 
-          user={{ common.system_user.uid }}
-          group={{ common.system_user.gid }}
+          user=sphinxsearch
+          group=sphinxsearch
       sphinx:
         template: !readfile ./sphinx.j2

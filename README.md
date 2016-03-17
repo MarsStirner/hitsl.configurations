@@ -20,10 +20,11 @@ hitsl.configurations
     # Set the cache to timeout after 1 hour (setting is in seconds)
     $ git config --global credential.helper 'cache --timeout=600'
 
-1. Создать директорию для проекта и перейти в неё
-2. Склонировать текущий репозиторий через `git clone https://stash.bars-open.ru/scm/medvtr/hitsl.configurations.git`
-3. Дать права на выполнение скрипту установщику `chmod +x hitsl.configurations/bigstrap.sh`
-4. Запустить скрипт установки проекта `./hitsl.configurations/bigstrap.sh` По окончании в директории code будут находиться следующие приложения:
+1. Создать директорию для проекта, проверить права на доступ для текущего непривилегированного пользователя
+2. Склонировать текущий репозиторий в эту директорию: `git clone https://stash.bars-open.ru/scm/medvtr/hitsl.configurations.git <dir_name>`,
+затем перейти в директорию проекта
+3. Дать права на выполнение скрипту установщику `chmod +x bigstrap.sh`
+4. Запустить скрипт установки проекта `./bigstrap.sh` По окончании в директории code будут находиться следующие приложения:
     * hippocrates - пользовательское приложение мис
     * nemesis - общая часть пользовательских приложений
     * caesar - пользовательская административная подсистема и подсистема печати
@@ -31,12 +32,14 @@ hitsl.configurations
     * simplelogs - внутренняя подсистема логирования
     * nvesta - внутренняя подсистема справочников
     * coldstar.bouser - разные внутренние подсистемы для аутентификации, блокировок и пр.
-5. Скопировать шаблон конфигурационного файла приложения из hitsl.configurations в текущую директирию `cp hitsl.configurations/usagi.yaml usagi_local.yaml`
+5. Скопировать шаблон конфигурационного файла приложения в локальную копию `cp usagi.yaml usagi_local.yaml`
 6. Внести исправления в файл конфига
-7. Сгенерировать конфигурационные файлы для uwsgi, nginx, supervisor через скрипт hitsl.configurations/install.py
+7. Сгенерировать конфигурационные файлы для uwsgi, nginx, supervisor, sphinx: `install.py usagi_local.yaml`
 (предварительно активировать виртуальное окружение `source venv/bin/activate`)
-8. Проверить полученные файлы и внести исправления, если требуется
-9. Сделать ссылки файлов конфигов на системные директории
+8. Сделать ссылки файлов конфигов на системные директории `ln -s <configs/...> </etc/...>`
+9. По необходимости создать директории для системных сервисов и проверить права на доступ к ним
+    * /var/cache/nginx
+    * /var/lib/sphinxsearch/data_{значение deployment.infra из usagi_local.yaml}
 10. Запустить системные сервисы
 
 

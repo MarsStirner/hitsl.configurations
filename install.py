@@ -5,7 +5,7 @@ import sys
 import yaml
 import jinja2
 import argparse
-import tsukino_usagi.loader
+import loader
 
 __author__ = 'viruzzz-kun'
 
@@ -25,7 +25,7 @@ def safe_make_dirs(path):
 
 def main():
     with open(args.config, 'r') as fin:
-        config = yaml.load(fin, Loader=tsukino_usagi.loader.ConfigLoader)
+        config = yaml.load(fin, Loader=loader.ConfigLoader)
 
     base_dir = os.path.abspath(config['deployment']['base_dir'])
 
