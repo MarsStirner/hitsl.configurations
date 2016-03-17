@@ -252,6 +252,15 @@ subsystems:
         - *UWSGI_APPS
 
       MONGO_URI: mongodb://localhost/simplelogs
+      SIMPLELOGS_COLLECTION: simplelogs
+      SIMPLELOGS_LEVELS:
+        - critical
+        - error
+        - warning
+        - notice
+        - info
+        - debug
+
     url: *SIMPLELOGS_URL
 
   coldstar: # Подсистема всякой ерунды
