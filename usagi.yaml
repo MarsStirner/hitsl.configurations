@@ -406,4 +406,4 @@ subsystems:
   crontab:
     configens:
       crontab:
-        template: !readfile ./hitsl.configurations/crontab.cron
+        template: !readfile ./crontab.cron
