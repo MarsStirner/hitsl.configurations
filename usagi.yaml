@@ -1,6 +1,7 @@
 configens: !include configens.yaml
 common:
   mis_database: &SQLALCHEMY mysql+cymysql://tmis:q1w2e3r4t5@127.0.0.1/hospital1_risar?charset=utf8
+  cookie-domain: &COOKIE_DOMAIN 127.0.0.1
 
   system_user:
     uid: tmis
@@ -324,17 +325,14 @@ subsystems:
           url: *SQLALCHEMY
         bouser.web: # Веб-интерфейс
           allowed-domains:
-            - http://127.0.0.1:6600
-            - http://127.0.0.1:6601
-          cors-domain: http://127.0.0.1:6600
-          # host: 127.0.0.1
-          # port: 5001
-          # static-path: src/coldstar/web/static
+            - *HIPPO_URL
+            - *CAESAR_URL
+            - *COLDSTAR_URL
+          cors-domain: HIPPO_URL
           strport: tcp:6097:127.0.0.1
-          # template-path: src/coldstar/web/templates
         bouser.castiel: # Аутентификация
           cookie_name: *CASTIEL_AUTH_TOKEN
-          cookie_domain: 127.0.0.1
+          cookie_domain: *COOKIE_DOMAIN
           clean_period: 10
           expiry_time: 3600
           domain_map: {}
