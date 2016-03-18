@@ -48,6 +48,7 @@ uwsgi:
 
       # place timestamps into log
       log-date = true
+      logfile-chown
 
       # user identifier of uWSGI processes
       uid = {{ common.system_user.uid }}
