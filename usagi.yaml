@@ -212,7 +212,6 @@ subsystems:
         template: "{{ configens.nginx.templates.uwsgi | recurse }}"
         ext: |
           location /static/ {
-            # Возможно, стоит придумать другой вариант получения пути
             alias {{ deployment.base_dir }}/venv/lib/python2.7/site-packages/nvesta/static/;
           }
 

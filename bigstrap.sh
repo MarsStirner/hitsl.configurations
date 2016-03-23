@@ -1,4 +1,36 @@
 #!/bin/bash
+
+HIPPO_BRANCH=RISAR
+NEMESIS_BRANCH=develop
+CAESAR_BRANCH=develop
+
+for i in "$@"
+do
+    case $i in
+        -hb=* | --hippo-branch=*)    HIPPO_BRANCH="${i#*=}"
+                                     shift
+                                     ;;
+        -nb=* | --nemesis-branch=*)  NEMESIS_BRANCH="${i#*=}"
+                                     shift
+                                     ;;
+        -cb=* | --caesar-branch=*)   CAESAR_BRANCH="${i#*=}"
+                                     shift
+                                     ;;
+        -h | --help )                echo "Установка виртуального окружения и клонирование проектов.
+Ветки приложений по умолчанию
+ * hippo - RISAR
+ * nemesis - develop
+ * caesar - develop
+Можно переопределить через передаваемые аргументы
+ -hb=    --hippo-branch=
+ -nb=    --nemesis-branch=
+ -cb=    --caesar-branch="
+                                     exit
+                                     ;;
+    esac
+done
+
+
 # 0. Создать корневую директорию инсталляции (допустим, /srv/infrastructure). Дальше все пути будут относительно неё
 
 # 1. Создать базовые поддиректории, в которые всё будет соваться
@@ -16,8 +48,10 @@ pip install pip setuptools --upgrade
 pip install pyyaml jinja2
 
 # 3. Склонировать сервисы
-git clone https://stash.bars-open.ru/scm/medvtr/hippocrates.git -b RISAR code/hippocrates
-git clone https://stash.bars-open.ru/scm/medvtr/caesar.git -b develop code/caesar
+echo " -> hippo branch: ${HIPPO_BRANCH}"
+git clone https://stash.bars-open.ru/scm/medvtr/hippocrates.git -b ${HIPPO_BRANCH} code/hippocrates
+echo " -> caesar branch: ${CAESAR_BRANCH}"
+git clone https://stash.bars-open.ru/scm/medvtr/caesar.git -b ${CAESAR_BRANCH} code/caesar
 
 # git clone https://stash.bars-open.ru/scm/medvtr/coldstar.bouser.git code/coldstar.bouser
 
@@ -33,4 +67,5 @@ pip install git+https://stash.bars-open.ru/scm/medvtr/tsukino_usagi.git@master#e
 pip install git+https://stash.bars-open.ru/scm/medvtr/nvesta.git@master#egg=nvesta
 pip install git+https://stash.bars-open.ru/scm/medvtr/simplelogs.git@feature-tsukino-usagi#egg=simplelogs
 
-pip install -e git+https://stash.bars-open.ru/scm/medvtr/nemesis.git@develop#egg=nemesis
+echo " -> nemesis branch: ${NEMESIS_BRANCH}"
+pip install -e git+https://stash.bars-open.ru/scm/medvtr/nemesis.git@${NEMESIS_BRANCH}#egg=nemesis
