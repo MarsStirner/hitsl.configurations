@@ -122,6 +122,10 @@ subsystems:
         session.key: hippocrates.session.id
       WSF_CSRF_ENABLED: True
       SECRET_KEY: "Жил бы цитрус в чаще юга? Да! Но фальшивый экземпляр."
+
+      RISAR_REGIONS:  # КЛАДР коды регионов, в которых работает система
+        - '58000000000'
+      FILE_STORAGE_PATH: ''
       PHARMEXPERT_URL: ''  # 'http://umkb.socmedica.com'
       PHARMEXPERT_SECURITY_KEY: ''
     url: *HIPPO_URL
