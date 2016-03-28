@@ -1,6 +1,6 @@
 configens: !include configens.yaml
 common:
-  mis_database: &SQLALCHEMY mysql+cymysql://tmis:q1w2e3r4t5@127.0.0.1/hospital1_risar?charset=utf8
+  mis_database: &SQLALCHEMY mysql+pymysql://tmis:q1w2e3r4t5@127.0.0.1/hospital1_risar?charset=utf8
   cookie-domain: &COOKIE_DOMAIN 127.0.0.1
 
   system_user:

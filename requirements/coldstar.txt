@@ -1,7 +1,5 @@
 twisted
 service_identity
-cython
-cymysql
 
 git+https://stash.bars-open.ru/scm/medvtr/bouser.git@master#egg=bouser
 git+https://stash.bars-open.ru/scm/medvtr/bouser.db.git@master#egg=bouser_db
