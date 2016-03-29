@@ -2,6 +2,10 @@ configens: !include configens.yaml
 common:
   mis_database: &SQLALCHEMY mysql+pymysql://tmis:q1w2e3r4t5@127.0.0.1/hospital1_risar?charset=utf8
   cookie-domain: &COOKIE_DOMAIN 127.0.0.1
+  celery_broker: &CELERY_BROKER_URL redis://localhost:6379/0  # redis://:password@hostname:port/db_number
+  celery_result_backend: &CELERY_RESULT_BACKEND redis://localhost:6379/1
+  # sql database for celery application task (CAT) info and results
+  cat_database: &SQLALCHEMY_CAT mysql+pymysql://tmis:q1w2e3r4t5@127.0.0.1/celery_tasks_risar?charset=utf8
 
   system_user:
     uid: tmis
@@ -48,7 +52,19 @@ common:
     ORGANISATION_INFIS_CODE: 500
     BABEL_DEFAULT_LOCALE: ru_RU
     TIME_ZONE: Europe/Moscow
-    CELERY_ENABLED: false
+    SQLALCHEMY_BINDS:
+      celery_tasks: *SQLALCHEMY_CAT
+
+    CELERY_ENABLED: true
+
+    CELERY_BROKER_URL: *CELERY_BROKER_URL
+    CELERY_RESULT_BACKEND: *CELERY_RESULT_BACKEND
+
+    CELERY_RESULT_SERIALIZER: json
+    CELERY_ENABLE_UTC: true
+    CELERY_TIMEZONE: Europe/Moscow
+    CELERYD_CONCURRENCY: 2
+    CELERY_TASK_RESULT_EXPIRES: 259200  # in seconds, default 1 day
 
 
 deployment:
@@ -411,3 +427,66 @@ subsystems:
     configens:
       crontab:
         template: !readfile ./crontab.cron
+
+  celery_worker:
+    configens:
+      supervisor:
+        template: |
+          ; ==================================
+          ;  celery worker supervisor example
+          ; ==================================
+
+          [program:{{ deployment.prefix }}_{{ this.name }}]
+          environment=PYTHONPATH={{ deployment.base_dir }}/code/hippocrates:{{ deployment.base_dir }}/code/hippocrates/hippocrates;TSUKINO_USAGI_URL={{ common.uwsgi_apps.TSUKINO_USAGI_URL }}
+          command={{ deployment.base_dir }}/venv/bin/celery -A hippocrates.celery_worker worker --loglevel=INFO
+          directory={{ deployment.base_dir }}
+
+          numprocs=1
+          stdout_logfile={{ deployment.base_dir }}/logs/{{ this.name }}.log
+          stderr_logfile={{ deployment.base_dir }}/logs/{{ this.name }}.log
+          autostart=true
+          autorestart=true
+          startsecs=10
+
+          ; Need to wait for currently executing tasks to finish at shutdown.
+          ; Increase this if you have very long running tasks.
+          stopwaitsecs=300
+
+          ; When resorting to send SIGKILL to the program to terminate it
+          ; send SIGKILL to its whole process group instead,
+          ; taking care of its children as well.
+          killasgroup=true
+
+          ; Set Celery priority higher than default (999)
+          ; so, if rabbitmq (or other broker) is supervised, it will start first.
+          priority=1000
+
+          user={{ common.system_user.uid }}
+          group={{ common.system_user.gid }}
+
+  celerybeat:
+    configens:
+      supervisor:
+        template: |
+          ; ================================
+          ;  celery beat supervisor example
+          ; ================================
+
+          [program:{{ deployment.prefix }}_{{ this.name }}]
+          environment=PYTHONPATH={{ deployment.base_dir }}/code/hippocrates:{{ deployment.base_dir }}/code/hippocrates/hippocrates;TSUKINO_USAGI_URL={{ common.uwsgi_apps.TSUKINO_USAGI_URL }}
+          command={{ deployment.base_dir }}/venv/bin/celery -A hippocrates.celery_worker beat --loglevel=INFO
+          directory={{ deployment.base_dir }}
+
+          numprocs=1
+          stdout_logfile={{ deployment.base_dir }}/logs/{{ this.name }}.log
+          stderr_logfile={{ deployment.base_dir }}/logs/{{ this.name }}.log
+          autostart=true
+          autorestart=true
+          startsecs=10
+
+          ; if rabbitmq (or other broker) is supervised, set its priority higher
+          ; so it starts first
+          priority=1001
+
+          user={{ common.system_user.uid }}
+          group={{ common.system_user.gid }}
