@@ -128,7 +128,7 @@ subsystems:
 
       SQLALCHEMY_DATABASE_URI: *SQLALCHEMY
       PROJECT_NAME: Hippocrates
-      TITLE: РИСАР
+      TITLE: "БАРС.МР"
       INDEX_HTML: hippo_index.html
       DEFAULT_ENDPOINT: risar.index_html
       BEAKER_SESSION:
