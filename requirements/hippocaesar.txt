@@ -29,5 +29,3 @@ jsonschema
 
 celery[redis]
 Flask-Celery-Helper
-
-uwsgidecorators
