@@ -144,6 +144,11 @@ subsystems:
       FILE_STORAGE_PATH: ''
       PHARMEXPERT_URL: ''  # 'http://umkb.socmedica.com'
       PHARMEXPERT_SECURITY_KEY: ''
+
+      JASPER_URL: 'http://10.1.2.11:8080/jasperserver-pro'
+      JASPER_LOGIN: 'jasperadmin'
+      JASPER_PASSWORD: ''
+
     url: *HIPPO_URL
 
   caesar: # Администрирование и подсистема печати
