@@ -44,7 +44,7 @@ common:
       host: *SPHINXQL_HOST
       port: *SPHINXQL_PORT
 
-    # DEBUG: True
+    DEBUG: True
     PROFILE: False
     TITLE: WebMIS 2.0
     COPYRIGHT_COMPANY: БАРС Груп
