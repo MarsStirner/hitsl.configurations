@@ -49,7 +49,7 @@ def main():
 
     for name, this in config['subsystems'].iteritems():
         this['name'] = name
-        for configen_name, configen_config in this.get('configens', []).iteritems():
+        for configen_name, configen_config in this.get('configens', {}).iteritems():
             configen_base_config = config['configens'].get(configen_name, {})
             c_extension = configen_base_config.get('extension', configen_base_config.get('extension', 'conf'))
             print name, configen_name
