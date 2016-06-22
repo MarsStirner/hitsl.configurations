@@ -66,6 +66,8 @@ common:
     CELERYD_CONCURRENCY: 2
     CELERY_TASK_RESULT_EXPIRES: 259200  # in seconds, default 1 day
 
+    FILE_STORAGE_PATH: &FILE_STORAGE_PATH ''
+
 
 deployment:
   base_dir: .
@@ -121,6 +123,11 @@ subsystems:
               uwsgi_buffers 8 128k;
           }
 
+          location /protected_files {
+              internal;
+              alias {{ common.user_apps.FILE_STORAGE_PATH }};
+          }
+
     app: !inherit
       ancestors:
         - *UWSGI_APPS
@@ -141,7 +148,7 @@ subsystems:
 
       RISAR_REGIONS:  # КЛАДР коды регионов, в которых работает система
         - '58000000000'
-      FILE_STORAGE_PATH: ''
+      FILE_STORAGE_PATH: *FILE_STORAGE_PATH
       PHARMEXPERT_URL: ''  # 'http://umkb.socmedica.com'
       PHARMEXPERT_SECURITY_KEY: ''
 
