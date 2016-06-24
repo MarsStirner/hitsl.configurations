@@ -32,6 +32,7 @@ common:
     VESTA_URL: &VESTA_URL http://127.0.0.1:6603/api/
     TSUKINO_USAGI_URL: &TSUKINO_USAGI_URL http://127.0.0.1:6602
     SIMPLELOGS_URL: &SIMPLELOGS_URL http://127.0.0.1:6604
+    DEVOURER_URL: &DEVOURER_URL http://127.0.0.1:6606
     IRON_URN_URL: &IRON_URN_URL http://127.0.0.1:6609
 
     SQLALCHEMY_TRACK_MODIFICATIONS: false
@@ -296,6 +297,41 @@ subsystems:
         - debug
 
     url: *SIMPLELOGS_URL
+
+  devourer: # Подсистема работы с файлами
+    configens:
+      uwsgi:
+        template: "{{ configens.uwsgi.templates.basic | recurse }}"
+        ext: |
+          processes=2
+
+          env=TSUKINO_USAGI_CONFIG={{ deployment.config_path }}
+
+          module=devourer.wsgi
+          callable=app
+      nginx:
+        port: 6606
+        template: "{{ configens.nginx.templates.uwsgi | recurse }}"
+        ext: |
+          location /protected_files {
+              internal;
+              alias {{ this.app.FILE_STORAGE_PATH }};
+          }
+
+          client_max_body_size {{ this.app.FILE_MAX_SIZE }};
+
+    app: !inherit
+      ancestors:
+        - *UWSGI_APPS
+      DEBUG: True
+      SQLALCHEMY_DATABASE_URI: *SQLALCHEMY
+      PROJECT_NAME: Devourer
+      TITLE: Подсистема работы с файлами
+      WSF_CSRF_ENABLED: True
+      SECRET_KEY: "Жил бы цитрус в чаще юга? Да! Но фальшивый экземпляррр."
+      FILE_STORAGE_PATH: *FILE_STORAGE_PATH
+      FILE_MAX_SIZE: 10MB
+    url: *DEVOURER_URL
 
   coldstar: # Подсистема всякой ерунды
     configens:
