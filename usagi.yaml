@@ -330,7 +330,11 @@ subsystems:
       WSF_CSRF_ENABLED: True
       SECRET_KEY: "Жил бы цитрус в чаще юга? Да! Но фальшивый экземпляррр."
       FILE_STORAGE_PATH: *FILE_STORAGE_PATH
-      FILE_MAX_SIZE: 10MB
+      FILE_MAX_SIZE: 10M
+      CORS_ORIGINS:
+        - *HIPPO_URL
+        - *CAESAR_URL
+
     url: *DEVOURER_URL
 
   coldstar: # Подсистема всякой ерунды
@@ -398,6 +402,7 @@ subsystems:
             - *HIPPO_URL
             - *CAESAR_URL
             - *COLDSTAR_URL
+            - *DEVOURER_URL
           cors-domain: *HIPPO_URL
           strport: tcp:6097:127.0.0.1
         bouser.castiel: # Аутентификация
