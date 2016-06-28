@@ -124,11 +124,6 @@ subsystems:
               uwsgi_buffers 8 128k;
           }
 
-          location /protected_files {
-              internal;
-              alias {{ common.user_apps.FILE_STORAGE_PATH }};
-          }
-
     app: !inherit
       ancestors:
         - *UWSGI_APPS
