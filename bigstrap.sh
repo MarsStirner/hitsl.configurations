@@ -61,11 +61,12 @@ pip install -r requirements/nvesta.txt
 pip install -r requirements/usagi.txt
 pip install -r requirements/coldstar.txt
 
-pip install git+https://github.com/hitsl/hitsl.utils.git@develop#egg=hitsl_utils
+pip install git+https://stash.bars-open.ru/scm/medvtr/hitsl.utils.git@develop#egg=hitsl_utils
 pip install git+https://stash.bars-open.ru/scm/medvtr/pysimplelogs2.git@master#egg=pysimplelogs2
 pip install git+https://stash.bars-open.ru/scm/medvtr/tsukino_usagi.git@master#egg=tsukino_usagi
 pip install git+https://stash.bars-open.ru/scm/medvtr/nvesta.git@master#egg=nvesta
 pip install git+https://stash.bars-open.ru/scm/medvtr/simplelogs.git@feature-tsukino-usagi#egg=simplelogs
+pip install git+https://stash.bars-open.ru/scm/medvtr/devourer.git@master#egg=devourer
 
 echo " -> nemesis branch: ${NEMESIS_BRANCH}"
 pip install -e git+https://stash.bars-open.ru/scm/medvtr/nemesis.git@${NEMESIS_BRANCH}#egg=nemesis

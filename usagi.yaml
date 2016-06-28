@@ -32,6 +32,7 @@ common:
     VESTA_URL: &VESTA_URL http://127.0.0.1:6603/api/
     TSUKINO_USAGI_URL: &TSUKINO_USAGI_URL http://127.0.0.1:6602
     SIMPLELOGS_URL: &SIMPLELOGS_URL http://127.0.0.1:6604
+    DEVOURER_URL: &DEVOURER_URL http://127.0.0.1:6606
     IRON_URN_URL: &IRON_URN_URL http://127.0.0.1:6609
 
     SQLALCHEMY_TRACK_MODIFICATIONS: false
@@ -65,6 +66,8 @@ common:
     CELERY_TIMEZONE: Europe/Moscow
     CELERYD_CONCURRENCY: 2
     CELERY_TASK_RESULT_EXPIRES: 259200  # in seconds, default 1 day
+
+    FILE_STORAGE_PATH: &FILE_STORAGE_PATH ''
 
 
 deployment:
@@ -121,6 +124,11 @@ subsystems:
               uwsgi_buffers 8 128k;
           }
 
+          location /protected_files {
+              internal;
+              alias {{ common.user_apps.FILE_STORAGE_PATH }};
+          }
+
     app: !inherit
       ancestors:
         - *UWSGI_APPS
@@ -141,7 +149,7 @@ subsystems:
 
       RISAR_REGIONS:  # КЛАДР коды регионов, в которых работает система
         - '58000000000'
-      FILE_STORAGE_PATH: ''
+      FILE_STORAGE_PATH: *FILE_STORAGE_PATH
       PHARMEXPERT_URL: ''  # 'http://umkb.socmedica.com'
       PHARMEXPERT_SECURITY_KEY: ''
 
@@ -290,6 +298,45 @@ subsystems:
 
     url: *SIMPLELOGS_URL
 
+  devourer: # Подсистема работы с файлами
+    configens:
+      uwsgi:
+        template: "{{ configens.uwsgi.templates.basic | recurse }}"
+        ext: |
+          processes=2
+
+          env=TSUKINO_USAGI_CONFIG={{ deployment.config_path }}
+
+          module=devourer.wsgi
+          callable=app
+      nginx:
+        port: 6606
+        template: "{{ configens.nginx.templates.uwsgi | recurse }}"
+        ext: |
+          location /protected_files {
+              internal;
+              alias {{ this.app.FILE_STORAGE_PATH }};
+          }
+
+          client_max_body_size {{ this.app.FILE_MAX_SIZE }};
+
+    app: !inherit
+      ancestors:
+        - *UWSGI_APPS
+      DEBUG: True
+      SQLALCHEMY_DATABASE_URI: *SQLALCHEMY
+      PROJECT_NAME: Devourer
+      TITLE: Подсистема работы с файлами
+      WSF_CSRF_ENABLED: True
+      SECRET_KEY: "Жил бы цитрус в чаще юга? Да! Но фальшивый экземпляррр."
+      FILE_STORAGE_PATH: *FILE_STORAGE_PATH
+      FILE_MAX_SIZE: 10M
+      CORS_ORIGINS:
+        - *HIPPO_URL
+        - *CAESAR_URL
+
+    url: *DEVOURER_URL
+
   coldstar: # Подсистема всякой ерунды
     configens:
       supervisor:
@@ -355,6 +402,7 @@ subsystems:
             - *HIPPO_URL
             - *CAESAR_URL
             - *COLDSTAR_URL
+            - *DEVOURER_URL
           cors-domain: *HIPPO_URL
           strport: tcp:6097:127.0.0.1
         bouser.castiel: # Аутентификация
