@@ -152,6 +152,8 @@ subsystems:
       JASPER_LOGIN: 'jasperadmin'
       JASPER_PASSWORD: ''
 
+      BARS_MIS_URL: ''
+
     url: *HIPPO_URL
 
   caesar: # Администрирование и подсистема печати
