@@ -330,7 +330,7 @@ source risar_events
     Event\
     JOIN Person ON Person.id = Event.execPerson_id\
     JOIN EventType ON (Event.eventType_id = EventType.id)\
-    JOIN rbRequestType ON (EventType.requestType_id = rbRequestType.id AND rbRequestType.code = 'pregnancy')\
+    JOIN rbRequestType ON (EventType.requestType_id = rbRequestType.id AND rbRequestType.code IN ('pregnancy', 'gynecological'))\
     JOIN (SELECT *, FLOOR(DATEDIFF(CURDATE(), Client.birthDate) / 365.25) AS age FROM Client) AS Client ON Client.id = Event.client_id\
     LEFT JOIN Organisation ON Organisation.id = Person.org_id\
     LEFT JOIN ClientPolicy ON (ClientPolicy.client_id = Client.id AND ClientPolicy.deleted = 0)\
