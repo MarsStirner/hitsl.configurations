@@ -71,11 +71,11 @@ common:
 
   system_prefs: &SYSTEM_PREFS
     # режим работы 1-стандартный, 2+ - различные интеграции. См. enum SystemMode
-    mode: 2
+    mode: 1
     # КЛАДР коды регионов, в которых работает система
-    RISAR_REGIONS: []
-#      - '58000000000'
-#      - '78000000000'
+    # RISAR_REGIONS: []
+    #  - '58000000000'
+    #  - '78000000000'
     integration:
       BARS_MIS_URL: http://127.0.0.1
 
