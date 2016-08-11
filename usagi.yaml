@@ -143,6 +143,8 @@ subsystems:
       TITLE: "БАРС.МР"
       INDEX_HTML: hippo_index.html
       DEFAULT_ENDPOINT: risar.index_html
+      CACHE_TYPE: filesystem
+      CACHE_DIR: /tmp/cache/hippo
       BEAKER_SESSION:
         session.type: file
         session.data_dir: /tmp/session/data
@@ -174,7 +176,7 @@ subsystems:
 
           mule
           mule
-          # pythonpath={{ deployment.base_dir }}/code/caesar
+          pythonpath={{ deployment.base_dir }}/code/caesar
           pythonpath={{ deployment.base_dir }}/code/caesar/caesar
 
           module=wsgi
@@ -201,7 +203,6 @@ subsystems:
       PROJECT_NAME: Caesar
       TITLE: Администрирование МИС
       INDEX_HTML: caesar_index.html
-      # DEFAULT_ENDPOINT: risar.index_html
       BEAKER_SESSION:
         session.type: file
         session.data_dir: /tmp/session/data
@@ -252,7 +253,6 @@ subsystems:
           location /static/ {
             alias {{ deployment.base_dir }}/venv/lib/python2.7/site-packages/nvesta/static/;
           }
-
 
     app: !inherit
       ancestors:
@@ -423,6 +423,8 @@ subsystems:
         bouser.ext.ezekiel.eventsource:
           keep-alive: 60
         bouser.ext.ezekiel.rest:
+        bouser.ext.ezekiel.web:
+#        bouser.ext.ezekiel.ws:
 
         bouser.ext.hitsl.scanner: # Сканирование
         bouser.ext.hitsl.scanner.resource:
@@ -434,8 +436,8 @@ subsystems:
         bouser.ext.simargl: # Уведомления
           # config: /srv/infrastructure/simargl.conf
           config:
-            print:
-              module: bouser.ext.simargl.clients.console
+#            print:
+#              module: bouser.ext.simargl.clients.console
             es:
               module: bouser.ext.simargl.clients.eventsource
             rpc:
