@@ -463,6 +463,39 @@ subsystems:
 
         # bouser.ext.ws: # WebSockets
 
+  maxwell: # Модуль связи РИСАР и интеграционной шины на RabbitMQ
+    configens:
+      supervisor:
+        template: |
+          [program:{{ deployment.prefix }}_{{ this.name }}]
+
+          command={{ deployment.base_dir }}/venv/bin/twistd -n bouser --config {{ common.uwsgi_apps.TSUKINO_USAGI_URL }}/{{ this.name }}
+          directory={{ deployment.base_dir }}
+          stdout_logfile={{ deployment.base_dir }}/logs/{{ this.name }}.log
+          stderr_logfile={{ deployment.base_dir }}/logs/{{ this.name }}.log
+          autostart=true
+          autorestart=true
+          startsecs=3
+          stopwaitsecs=6
+          environment=VIRTUAL_ENV={{ deployment.base_dir }}/venv
+
+          user={{ common.system_user.uid }}
+          group={{ common.system_user.gid }}
+
+    app:
+      module:
+        bouser.web: # Веб-интерфейс
+          allowed-domains:
+            - *HIPPO_URL
+            - *CAESAR_URL
+            - *COLDSTAR_URL
+            - *DEVOURER_URL
+          cors-domain: *HIPPO_URL
+          strport: tcp:6609:127.0.0.1
+        bouser_maxwell:
+          amqp: {} # Здесь будут настройки соединения с RabbitMQ
+          risar_url_root: http://localhost:6600/risar/api/integration  # корень интеграционного модуля в РИСАР
+
   sphinx:
     configens:
       supervisor:
