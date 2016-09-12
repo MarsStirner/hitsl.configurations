@@ -64,7 +64,7 @@ pip install -r requirements/coldstar.txt
 pip install git+https://stash.bars-open.ru/scm/medvtr/hitsl.utils.git@develop#egg=hitsl_utils
 pip install git+https://stash.bars-open.ru/scm/medvtr/pysimplelogs2.git@master#egg=pysimplelogs2
 pip install git+https://stash.bars-open.ru/scm/medvtr/tsukino_usagi.git@master#egg=tsukino_usagi
-pip install git+https://stash.bars-open.ru/scm/medvtr/nvesta.git@master#egg=nvesta
+pip install git+https://stash.bars-open.ru/scm/medvtr/nvesta.git@non-versioned#egg=nvesta
 pip install git+https://stash.bars-open.ru/scm/medvtr/simplelogs.git@feature-tsukino-usagi#egg=simplelogs
 pip install git+https://stash.bars-open.ru/scm/medvtr/devourer.git@master#egg=devourer
 

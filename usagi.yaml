@@ -67,7 +67,7 @@ common:
     CELERYD_CONCURRENCY: 2
     CELERY_TASK_RESULT_EXPIRES: 259200  # in seconds, default 1 day
 
-    FILE_STORAGE_PATH: &FILE_STORAGE_PATH ''
+    FILE_STORAGE_PATH: &FILE_STORAGE_PATH '/tmp'
 
   system_prefs: &SYSTEM_PREFS
     # режим работы 1-стандартный, 2+ - различные интеграции. См. enum SystemMode
