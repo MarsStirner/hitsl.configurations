@@ -78,6 +78,9 @@ common:
     #  - '78000000000'
     integration:
       BARS_MIS_URL: http://127.0.0.1
+    ui:
+      # angularjs блокирует ссылки с протоколами, которые не относятся к разрешенным
+      # frontend_additional_href_protocols: ''
 
 deployment:
   base_dir: .
