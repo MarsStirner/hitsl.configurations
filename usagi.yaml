@@ -81,6 +81,8 @@ common:
     ui:
       # angularjs блокирует ссылки с протоколами, которые не относятся к разрешенным
       # frontend_additional_href_protocols: ''
+    regional:
+      uses_regional_services: false
 
 deployment:
   base_dir: .
