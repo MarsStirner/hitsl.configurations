@@ -311,6 +311,7 @@ source risar_events
     UNIX_TIMESTAMP(Event.modifyDatetime) AS modify_date,\
     UNIX_TIMESTAMP(DATE(Event.execDate)) AS exec_date,\
     Person.org_id AS org_id,\
+    Organisation.shortName AS org_name,\
     CAST(LEFT(Organisation.area, 5) AS UNSIGNED) AS AREA,\
     CONCAT_WS(' ', Client.lastName, Client.firstName, Client.patrName) AS NAME,\
     GROUP_CONCAT(DISTINCT CONCAT_WS(' ', ClientDocument.serial, ClientDocument.number) SEPARATOR '; ') AS document,\
@@ -375,7 +376,7 @@ source risar_events
     sql_field_string        = policy
     sql_field_string      = client_work_code
 
-
+    sql_attr_string        = org_name
     sql_attr_string        = person_name
     sql_attr_uint        = modify_date
     sql_attr_uint        = set_date
