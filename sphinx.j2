@@ -312,7 +312,7 @@ source risar_events
     UNIX_TIMESTAMP(DATE(Event.execDate)) AS exec_date,\
     Person.org_id AS org_id,\
     Organisation.shortName AS org_name,\
-    CAST(LEFT(Organisation.area, 5) AS UNSIGNED) AS AREA,\
+    CAST(LEFT(Organisation.area, 8) AS UNSIGNED) AS AREA,\
     CONCAT_WS(' ', Client.lastName, Client.firstName, Client.patrName) AS NAME,\
     GROUP_CONCAT(DISTINCT CONCAT_WS(' ', ClientDocument.serial, ClientDocument.number) SEPARATOR '; ') AS document,\
     rbDocumentType.name AS document_type,\
