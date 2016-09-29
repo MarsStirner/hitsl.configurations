@@ -413,6 +413,74 @@ index risar_events
     U+410..U+42F->U+430..U+44F, U+430..U+44F, U+401->U+451, U+451
 }
 
+
+source risar_events_short
+{
+    type        = mysql
+
+    sql_host    = 127.0.0.1
+    sql_user    = tmis
+    sql_pass    = q1w2e3r4t5
+    sql_db      = hospital1_risar
+    sql_port    = 3306
+
+    #       sql_query_pre = SET CHARACTER_SET_RESULTS=utf8
+    sql_query_pre = SET NAMES utf8
+    sql_query_pre = SET CHARACTER SET utf8
+
+    sql_query = \
+    SELECT \
+    e.id, \
+    e.externalId as external_id, \
+    SUBSTRING_INDEX(externalId, '/', 1) as ext_left, \
+    SUBSTRING_INDEX(externalId, '/', -1) as ext_right, \
+    c.lastName as client_lastName, \
+    c.firstName as client_firstName, \
+    c.patrName as client_patrName, \
+    CONCAT_WS(' ', c.lastName, c.firstName, c.patrName) as client_name, \
+    c.id as client_code, \
+    c.birthDate as client_bd, \
+    e.setDate as event_date, \
+    et.code as event_type_code \
+    FROM \
+    Event e \
+    LEFT JOIN Person ON Person.id = e.execPerson_id \
+    JOIN EventType et ON e.eventType_id = et.id \
+    JOIN rbRequestType ON et.requestType_id = rbRequestType.id AND rbRequestType.code IN ('pregnancy', 'gynecological') \
+    JOIN Client c on c.id = e.client_id \
+    WHERE e.deleted = 0 \
+    GROUP BY e.id
+
+    sql_field_string      = external_id
+    sql_field_string      = ext_left
+    sql_field_string      = ext_right
+    sql_field_string      = client_name
+    sql_field_string      = client_lastName
+    sql_field_string      = client_firstName
+    sql_field_string      = client_patrName
+
+
+    sql_attr_string       = event_date
+    sql_attr_string      = client_code
+    sql_attr_string      = client_bd
+    sql_attr_string      = event_type_code
+}
+
+
+index risar_events_short
+{
+    source                  = risar_events_short
+    path                    = /var/lib/sphinxsearch/data_risar_dev/risar_events_short
+    docinfo                 = extern
+    charset_type            = utf-8
+    min_word_len            = 1
+    min_prefix_len          = 1
+
+    charset_table = 0..9, A..Z->a..z, _, /, a..z, U+2E, \
+    U+410..U+42F->U+430..U+44F, U+430..U+44F, U+401->U+451, U+451
+}
+
+
 indexer
 {
     mem_limit       = 32M
