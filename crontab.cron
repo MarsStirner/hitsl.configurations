@@ -29,3 +29,4 @@
 */10 * * * * /usr/bin/indexer --config {{ deployment.base_dir }}/configs/sphinx/{{ deployment.prefix }}_sphinx.conf --rotate event_service > {{ deployment.base_dir }}/logs/{{ this.name }}.log 2>&1
 * * * * * /usr/bin/indexer --config {{ deployment.base_dir }}/configs/sphinx/{{ deployment.prefix }}_sphinx.conf --rotate events > {{ deployment.base_dir }}/logs/{{ this.name }}.log 2>&1
 * * * * * /usr/bin/indexer --config {{ deployment.base_dir }}/configs/sphinx/{{ deployment.prefix }}_sphinx.conf --rotate risar_events > {{ deployment.base_dir }}/logs/{{ this.name }}.log 2>&1
+* * * * * /usr/bin/indexer --config {{ deployment.base_dir }}/configs/sphinx/{{ deployment.prefix }}_sphinx.conf --rotate risar_events_short > {{ deployment.base_dir }}/logs/{{ this.name }}.log 2>&1
