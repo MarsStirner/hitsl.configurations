@@ -469,8 +469,8 @@ source risar_events_short
 
 index risar_events_short
 {
-    source                  = risar_events_short
-    path                    = /var/lib/sphinxsearch/data_risar_dev/risar_events_short
+    source                  = risar_events
+    path                    = /var/lib/sphinxsearch/data_{{ deployment.prefix }}/risar_events_short
     docinfo                 = extern
     charset_type            = utf-8
     min_word_len            = 1
