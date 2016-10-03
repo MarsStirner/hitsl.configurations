@@ -416,13 +416,13 @@ index risar_events
 
 source risar_events_short
 {
-    type        = mysql
+    type        = {{ common.sphinx.DB_TYPE }}
 
-    sql_host    = 127.0.0.1
-    sql_user    = tmis
-    sql_pass    = q1w2e3r4t5
-    sql_db      = hospital1_risar
-    sql_port    = 3306
+    sql_host    = {{ common.sphinx.DB_HOST }}
+    sql_user    = {{ common.sphinx.DB_USER }}
+    sql_pass    = {{ common.sphinx.DB_PASSWORD }}
+    sql_db      = {{ common.sphinx.DB_NAME }}
+    sql_port    = {{ common.sphinx.DB_PORT }}
 
     #       sql_query_pre = SET CHARACTER_SET_RESULTS=utf8
     sql_query_pre = SET NAMES utf8
