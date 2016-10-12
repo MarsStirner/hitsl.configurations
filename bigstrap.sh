@@ -65,7 +65,7 @@ pip install git+https://stash.bars-open.ru/scm/medvtr/hitsl.utils.git@develop#eg
 pip install git+https://stash.bars-open.ru/scm/medvtr/pysimplelogs2.git@master#egg=pysimplelogs2
 pip install git+https://stash.bars-open.ru/scm/medvtr/tsukino_usagi.git@master#egg=tsukino_usagi
 pip install git+https://stash.bars-open.ru/scm/medvtr/nvesta.git@non-versioned#egg=nvesta
-pip install git+https://stash.bars-open.ru/scm/medvtr/simplelogs.git@feature-tsukino-usagi#egg=simplelogs
+pip install git+https://stash.bars-open.ru/scm/medvtr/simplelogs.git@develop#egg=simplelogs
 pip install git+https://stash.bars-open.ru/scm/medvtr/devourer.git@master#egg=devourer
 
 echo " -> nemesis branch: ${NEMESIS_BRANCH}"
