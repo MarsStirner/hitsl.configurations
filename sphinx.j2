@@ -327,12 +327,13 @@ source risar_events
     UNIX_TIMESTAMP(DATE(apv_psdate.value)) AS psdate,\
     UNIX_TIMESTAMP(DATE(apv_modify_date.value)) AS card_modify_date,\
     GROUP_CONCAT(UNIX_TIMESTAMP(DATE(checkup.begDate)) DIV 86400 SEPARATOR ',') AS checkups,\
-    rbRequestType.id as request_type_id\
+    rbRequestType.id as request_type_id,\
+    rbrt.code as card_req_type\
     FROM\
     Event\
     JOIN Person ON Person.id = Event.execPerson_id\
     JOIN EventType ON (Event.eventType_id = EventType.id)\
-    JOIN rbRequestType ON (EventType.requestType_id = rbRequestType.id AND rbRequestType.code IN ('pregnancy', 'gynecological'))\
+    JOIN rbRequestType rbrt ON (EventType.requestType_id = rbrt.id AND rbrt.code IN ('pregnancy', 'gynecological'))\
     JOIN (SELECT *, FLOOR(DATEDIFF(CURDATE(), Client.birthDate) / 365.25) AS age FROM Client) AS Client ON Client.id = Event.client_id\
     LEFT JOIN Organisation ON Organisation.id = Person.org_id\
     LEFT JOIN ClientPolicy ON (ClientPolicy.client_id = Client.id AND ClientPolicy.deleted = 0)\
@@ -376,6 +377,7 @@ source risar_events
     sql_field_string        = policy
     sql_field_string      = client_work_code
 
+    sql_attr_string        = card_req_type
     sql_attr_string        = org_name
     sql_attr_string        = person_name
     sql_attr_uint        = modify_date
