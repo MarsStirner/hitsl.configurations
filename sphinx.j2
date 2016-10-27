@@ -327,7 +327,7 @@ source risar_events
     UNIX_TIMESTAMP(DATE(apv_psdate.value)) AS psdate,\
     UNIX_TIMESTAMP(DATE(apv_modify_date.value)) AS card_modify_date,\
     GROUP_CONCAT(UNIX_TIMESTAMP(DATE(checkup.begDate)) DIV 86400 SEPARATOR ',') AS checkups,\
-    rbRequestType.id as request_type_id,\
+    rbrt.id as request_type_id,\
     rbrt.code as card_req_type\
     FROM\
     Event\
