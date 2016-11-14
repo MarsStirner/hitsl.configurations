@@ -84,6 +84,12 @@ common:
     regional:
       uses_regional_services: false
 
+  mis_mq_integrations: &MIS_MQ_INTEGRATIONS
+    rabbit_url: 'amqp://guest:guest@127.0.0.1:5672//'
+    1C_PAYMENT:
+      invoice_queue: ''
+      invoice_exchange: ''
+
 deployment:
   base_dir: .
   prefix: infra
@@ -168,6 +174,7 @@ subsystems:
       JASPER_PASSWORD: ''
 
       system_prefs: *SYSTEM_PREFS
+      MIS_MQ_INTEGRATIONS: *MIS_MQ_INTEGRATIONS
 
     url: *HIPPO_URL
 
