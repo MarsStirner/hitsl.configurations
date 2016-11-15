@@ -34,6 +34,7 @@ common:
     SIMPLELOGS_URL: &SIMPLELOGS_URL http://127.0.0.1:6604
     DEVOURER_URL: &DEVOURER_URL http://127.0.0.1:6606
     IRON_URN_URL: &IRON_URN_URL http://127.0.0.1:6609
+    SIRIUS_URL: &SIRIUS_URL http://127.0.0.1:8600
 
     SQLALCHEMY_TRACK_MODIFICATIONS: false
     SQLALCHEMY_ECHO: false
@@ -55,6 +56,7 @@ common:
     TIME_ZONE: Europe/Moscow
     SQLALCHEMY_BINDS:
       celery_tasks: *SQLALCHEMY_CAT
+    SIRIUS_ENABLED: false
 
     CELERY_ENABLED: true
 
