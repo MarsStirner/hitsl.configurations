@@ -336,7 +336,10 @@ source risar_events
     /* pathology_list */\
     GROUP_CONCAT(DISTINCT apv_pathology.value) AS pathology_list_id,\
     /* risk groups */\
-    RRR.risk_group_codes AS risk_group_codes\
+    RRR.risk_group_codes AS risk_group_codes,\
+    /* epicrisis */\
+    epicr.id AS epicrisis_id,\
+    UNIX_TIMESTAMP(apv_delivd.value) DIV 86400 AS epicrisis_delivery_date\
     FROM\
     Event\
     JOIN Person ON Person.id = Event.execPerson_id\
@@ -349,17 +352,33 @@ source risar_events
     LEFT JOIN ClientDocument ON (ClientDocument.client_id = Client.id AND ClientDocument.deleted = 0)\
     LEFT JOIN rbDocumentType ON ClientDocument.documentType_id = rbDocumentType.id\
     LEFT JOIN rbDocumentTypeGroup ON (rbDocumentType.group_id = rbDocumentTypeGroup.id AND rbDocumentTypeGroup.code = '1')\
+    /* cardAttributes */\
     LEFT JOIN Action CA ON (\
-    CA.event_id = Event.id AND\
-    CA.actionType_id IN (SELECT id FROM ActionType WHERE ActionType.flatCode = 'cardAttributes') AND\
-    CA.deleted = 0)\
+        CA.event_id = Event.id AND\
+        CA.actionType_id IN (SELECT id FROM ActionType WHERE ActionType.flatCode = 'cardAttributes') AND\
+        CA.deleted = 0)\
+    /* risar_mother_anamnesis */\
     LEFT JOIN Action anmz ON (\
         anmz.event_id = Event.id AND\
         anmz.actionType_id IN (SELECT id FROM ActionType WHERE ActionType.flatCode = 'risar_mother_anamnesis') AND\
         anmz.deleted = 0)\
+    /* epicrisis */\
+    LEFT JOIN Action epicr ON (\
+        epicr.event_id = Event.id AND\
+        epicr.actionType_id IN (SELECT id FROM ActionType WHERE ActionType.flatCode = 'epicrisis') AND\
+        epicr.deleted = 0)\
+    \
+    /* property values */\
+    \
+    /* work_group */\
     LEFT JOIN ActionPropertyType apt_wg ON (apt_wg.actionType_id = anmz.actionType_id AND apt_wg.code = 'work_group')\
     LEFT JOIN ActionProperty ap_wg ON (ap_wg.action_id = anmz.id AND ap_wg.type_id = apt_wg.id)\
     LEFT JOIN ActionProperty_ExtRef apv_wg ON (ap_wg.id = apv_wg.id)\
+    /* epicrisis delivery_date */\
+    LEFT JOIN ActionPropertyType apt_delivd ON (apt_delivd.actionType_id = epicr.actionType_id AND apt_delivd.code = 'delivery_date')\
+    LEFT JOIN ActionProperty ap_delivd ON (ap_delivd.action_id = epicr.id AND ap_delivd.type_id = apt_delivd.id)\
+    LEFT JOIN ActionProperty_Date apv_delivd ON (ap_delivd.id = apv_delivd.id)\
+    /* prenatal_risk_572 */\
     LEFT JOIN ActionPropertyType apt_risk ON (apt_risk.actionType_id = CA.actionType_id AND apt_risk.code = 'prenatal_risk_572')\
     LEFT JOIN ActionProperty ap_risk ON (ap_risk.action_id = CA.id AND ap_risk.type_id = apt_risk.id)\
     LEFT JOIN ActionProperty_Integer apv_risk ON (ap_risk.id = apv_risk.id)\
@@ -426,12 +445,12 @@ source risar_events
     sql_attr_uint           = client_age
     sql_attr_string         = document_type
     sql_attr_uint           = request_type_id
-    sql_attr_multi          = uint pathology_list_id from field
-    sql_field_string        = risk_group_codes
-
-    # test
     sql_attr_uint           = preg_week
     sql_attr_uint           = latest_checkup_date
+    sql_attr_multi          = uint pathology_list_id from field
+    sql_field_string        = risk_group_codes
+    sql_attr_uint           = epicrisis_id
+    sql_attr_uint           = epicrisis_delivery_date
 }
 
 
