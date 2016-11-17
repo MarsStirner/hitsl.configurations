@@ -334,7 +334,9 @@ source risar_events
                        apv_psdate.value) DIV 7) + 1,\
         NULL) AS preg_week,\
     /* pathology_list */\
-	GROUP_CONCAT(DISTINCT apv_pathology.value) AS pathology_list_id\
+    GROUP_CONCAT(DISTINCT apv_pathology.value) AS pathology_list_id,\
+    /* risk groups */\
+    RRR.risk_group_codes AS risk_group_codes\
     FROM\
     Event\
     JOIN Person ON Person.id = Event.execPerson_id\
@@ -384,6 +386,13 @@ source risar_events
             SELECT id FROM ActionType\
             WHERE flatCode IN ('risarFirstInspection', 'risarSecondInspection', 'risarPCCheckUp')) AND\
         checkup.deleted = 0)\
+    /* risk groups */\
+    LEFT JOIN (\
+        SELECT rrr.event_id, GROUP_CONCAT(DISTINCT rrr.riskGroup_code) AS risk_group_codes\
+        FROM RisarRiskGroup rrr\
+        WHERE rrr.deleted = 0\
+        GROUP BY rrr.event_id\
+    ) RRR ON Event.id = RRR.event_id\
     WHERE\
         Event.deleted = 0\
         AND IF(rbrt.code = 'pregnancy', CA.id IS NOT NULL, 1)\
@@ -418,6 +427,7 @@ source risar_events
     sql_attr_string         = document_type
     sql_attr_uint           = request_type_id
     sql_attr_multi          = uint pathology_list_id from field
+    sql_field_string        = risk_group_codes
 
     # test
     sql_attr_uint           = preg_week
