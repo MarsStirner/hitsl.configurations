@@ -332,7 +332,9 @@ source risar_events
     IF (apv_psdate.id IS NOT NULL,\
         FLOOR(DATEDIFF(IF(apv_bdate.value IS NOT NULL, LEAST(apv_bdate.value, CURDATE()), CURDATE()),\
                        apv_psdate.value) DIV 7) + 1,\
-        NULL) AS preg_week\
+        NULL) AS preg_week,\
+    /* pathology_list */\
+	GROUP_CONCAT(DISTINCT apv_pathology.value) AS pathology_list_id\
     FROM\
     Event\
     JOIN Person ON Person.id = Event.execPerson_id\
@@ -371,6 +373,10 @@ source risar_events
     LEFT JOIN ActionPropertyType apt_modify_date ON (apt_modify_date.actionType_id = CA.actionType_id AND apt_modify_date.code = 'chart_modify_date')\
     LEFT JOIN ActionProperty ap_modify_date ON (ap_modify_date.action_id = CA.id AND ap_modify_date.type_id = apt_modify_date.id)\
     LEFT JOIN ActionProperty_Date apv_modify_date ON (ap_modify_date.id = apv_modify_date.id)\
+    /* pathology */\
+    LEFT JOIN ActionPropertyType apt_pathology ON (apt_pathology.actionType_id = CA.actionType_id AND apt_pathology.code = 'pregnancy_pathology_list')\
+    LEFT JOIN ActionProperty ap_pathology ON (ap_pathology.action_id = CA.id AND ap_pathology.type_id = apt_pathology.id)\
+    LEFT JOIN ActionProperty_Integer apv_pathology ON (ap_pathology.id = apv_pathology.id)\
     /* pregnancy checkups */\
     LEFT JOIN Action checkup ON (\
         checkup.event_id = Event.id AND\
@@ -411,6 +417,7 @@ source risar_events
     sql_attr_uint           = client_age
     sql_attr_string         = document_type
     sql_attr_uint           = request_type_id
+    sql_attr_multi          = uint pathology_list_id from field
 
     # test
     sql_attr_uint           = preg_week
