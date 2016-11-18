@@ -335,6 +335,16 @@ source risar_events
         NULL) AS preg_week,\
     /* pathology_list */\
     GROUP_CONCAT(DISTINCT apv_pathology.value) AS pathology_list_id,\
+    /* card_fill_rate */\
+    apv_card_fill_rate.value AS card_fill_rate,\
+    /* card_fill_rate_anamnesis */\
+    apv_card_fill_rate_anamnesis.value AS card_fill_rate_anamnesis,\
+	/* card_fill_rate_first_inspection */\
+    apv_card_fill_rate_first_inspection.value AS card_fill_rate_first_inspection,\
+	/* card_fill_rate_repeated_inspection */\
+    apv_card_fill_rate_repeated_inspection.value AS card_fill_rate_repeated_inspection,\
+	/* card_fill_rate_epicrisis */\
+    apv_card_fill_rate_epicrisis.value AS card_fill_rate_epicrisis,\
     /* risk groups */\
     RRR.risk_group_codes AS risk_group_codes,\
     /* epicrisis */\
@@ -398,6 +408,26 @@ source risar_events
     LEFT JOIN ActionPropertyType apt_pathology ON (apt_pathology.actionType_id = CA.actionType_id AND apt_pathology.code = 'pregnancy_pathology_list')\
     LEFT JOIN ActionProperty ap_pathology ON (ap_pathology.action_id = CA.id AND ap_pathology.type_id = apt_pathology.id)\
     LEFT JOIN ActionProperty_Integer apv_pathology ON (ap_pathology.id = apv_pathology.id)\
+    /* card_fill_rate */\
+    LEFT JOIN ActionPropertyType apt_card_fill_rate ON (apt_card_fill_rate.actionType_id = CA.actionType_id AND apt_card_fill_rate.code = 'card_fill_rate')\
+    LEFT JOIN ActionProperty ap_card_fill_rate ON (ap_card_fill_rate.action_id = CA.id AND ap_card_fill_rate.type_id = apt_card_fill_rate.id)\
+    LEFT JOIN ActionProperty_Integer apv_card_fill_rate ON (ap_card_fill_rate.id = apv_card_fill_rate.id)\
+	/* card_fill_rate_anamnesis */\
+    LEFT JOIN ActionPropertyType apt_card_fill_rate_anamnesis ON (apt_card_fill_rate_anamnesis.actionType_id = CA.actionType_id AND apt_card_fill_rate_anamnesis.code = 'card_fill_rate_anamnesis')\
+    LEFT JOIN ActionProperty ap_card_fill_rate_anamnesis ON (ap_card_fill_rate_anamnesis.action_id = CA.id AND ap_card_fill_rate_anamnesis.type_id = apt_card_fill_rate_anamnesis.id)\
+    LEFT JOIN ActionProperty_Integer apv_card_fill_rate_anamnesis ON (ap_card_fill_rate_anamnesis.id = apv_card_fill_rate_anamnesis.id)\
+	/* card_fill_rate_first_inspection */\
+    LEFT JOIN ActionPropertyType apt_card_fill_rate_first_inspection ON (apt_card_fill_rate_first_inspection.actionType_id = CA.actionType_id AND apt_card_fill_rate_first_inspection.code = 'card_fill_rate_first_inspection')\
+    LEFT JOIN ActionProperty ap_card_fill_rate_first_inspection ON (ap_card_fill_rate_first_inspection.action_id = CA.id AND ap_card_fill_rate_first_inspection.type_id = apt_card_fill_rate_first_inspection.id)\
+    LEFT JOIN ActionProperty_Integer apv_card_fill_rate_first_inspection ON (ap_card_fill_rate_first_inspection.id = apv_card_fill_rate_first_inspection.id)\
+	/* card_fill_rate_repeated_inspection */\
+    LEFT JOIN ActionPropertyType apt_card_fill_rate_repeated_inspection ON (apt_card_fill_rate_repeated_inspection.actionType_id = CA.actionType_id AND apt_card_fill_rate_repeated_inspection.code = 'card_fill_rate_repeated_inspection')\
+    LEFT JOIN ActionProperty ap_card_fill_rate_repeated_inspection ON (ap_card_fill_rate_repeated_inspection.action_id = CA.id AND ap_card_fill_rate_repeated_inspection.type_id = apt_card_fill_rate_repeated_inspection.id)\
+    LEFT JOIN ActionProperty_Integer apv_card_fill_rate_repeated_inspection ON (ap_card_fill_rate_repeated_inspection.id = apv_card_fill_rate_repeated_inspection.id)\
+	/* card_fill_rate_epicrisis */\
+    LEFT JOIN ActionPropertyType apt_card_fill_rate_epicrisis ON (apt_card_fill_rate_epicrisis.actionType_id = CA.actionType_id AND apt_card_fill_rate_epicrisis.code = 'card_fill_rate_epicrisis')\
+    LEFT JOIN ActionProperty ap_card_fill_rate_epicrisis ON (ap_card_fill_rate_epicrisis.action_id = CA.id AND ap_card_fill_rate_epicrisis.type_id = apt_card_fill_rate_epicrisis.id)\
+    LEFT JOIN ActionProperty_Integer apv_card_fill_rate_epicrisis ON (ap_card_fill_rate_epicrisis.id = apv_card_fill_rate_epicrisis.id)\
     /* pregnancy checkups */\
     LEFT JOIN Action checkup ON (\
         checkup.event_id = Event.id AND\
@@ -448,6 +478,11 @@ source risar_events
     sql_attr_uint           = preg_week
     sql_attr_uint           = latest_checkup_date
     sql_attr_multi          = uint pathology_list_id from field
+    sql_attr_uint           = card_fill_rate
+    sql_attr_uint           = card_fill_rate_anamnesis
+    sql_attr_uint           = card_fill_rate_first_inspection
+    sql_attr_uint           = card_fill_rate_repeated_inspection
+    sql_attr_uint           = card_fill_rate_epicrisis
     sql_field_string        = risk_group_codes
     sql_attr_uint           = epicrisis_id
     sql_attr_uint           = epicrisis_delivery_date
