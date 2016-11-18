@@ -339,17 +339,34 @@ source risar_events
     apv_card_fill_rate.value AS card_fill_rate,\
     /* card_fill_rate_anamnesis */\
     apv_card_fill_rate_anamnesis.value AS card_fill_rate_anamnesis,\
-	/* card_fill_rate_first_inspection */\
+    /* card_fill_rate_first_inspection */\
     apv_card_fill_rate_first_inspection.value AS card_fill_rate_first_inspection,\
-	/* card_fill_rate_repeated_inspection */\
+    /* card_fill_rate_repeated_inspection */\
     apv_card_fill_rate_repeated_inspection.value AS card_fill_rate_repeated_inspection,\
-	/* card_fill_rate_epicrisis */\
+    /* card_fill_rate_epicrisis */\
     apv_card_fill_rate_epicrisis.value AS card_fill_rate_epicrisis,\
     /* risk groups */\
     RRR.risk_group_codes AS risk_group_codes,\
     /* epicrisis */\
     epicr.id AS epicrisis_id,\
-    UNIX_TIMESTAMP(apv_delivd.value) DIV 86400 AS epicrisis_delivery_date\
+    UNIX_TIMESTAMP(apv_delivd.value) DIV 86400 AS epicrisis_delivery_date,\
+    /* diags mkbs */\
+    GROUP_CONCAT(DISTINCT Diags.mkb_code) AS diag_mkbs,\
+    GROUP_CONCAT(DISTINCT Diags.mkb_id) AS diag_mkb_ids,\
+    GROUP_CONCAT(DISTINCT\
+        IF(Diags.ds_endDate IS NOT NULL AND\
+               /* latest diagnostic is within event */\
+               SUBSTRING_INDEX(Diags.dg_dates, ",", -1) <= COALESCE(Event.execDate, CURDATE()),\
+           Diags.mkb_code,\
+           NULL)\
+    ) AS diag_closed_mkbs,\
+    GROUP_CONCAT(DISTINCT\
+        IF(Diags.ds_endDate IS NOT NULL AND\
+               /* latest diagnostic is within event */\
+               SUBSTRING_INDEX(Diags.dg_dates, ",", -1) <= COALESCE(Event.execDate, CURDATE()),\
+           Diags.mkb_id,\
+           NULL)\
+    ) AS diag_closed_mkb_ids\
     FROM\
     Event\
     JOIN Person ON Person.id = Event.execPerson_id\
@@ -412,19 +429,19 @@ source risar_events
     LEFT JOIN ActionPropertyType apt_card_fill_rate ON (apt_card_fill_rate.actionType_id = CA.actionType_id AND apt_card_fill_rate.code = 'card_fill_rate')\
     LEFT JOIN ActionProperty ap_card_fill_rate ON (ap_card_fill_rate.action_id = CA.id AND ap_card_fill_rate.type_id = apt_card_fill_rate.id)\
     LEFT JOIN ActionProperty_Integer apv_card_fill_rate ON (ap_card_fill_rate.id = apv_card_fill_rate.id)\
-	/* card_fill_rate_anamnesis */\
+    /* card_fill_rate_anamnesis */\
     LEFT JOIN ActionPropertyType apt_card_fill_rate_anamnesis ON (apt_card_fill_rate_anamnesis.actionType_id = CA.actionType_id AND apt_card_fill_rate_anamnesis.code = 'card_fill_rate_anamnesis')\
     LEFT JOIN ActionProperty ap_card_fill_rate_anamnesis ON (ap_card_fill_rate_anamnesis.action_id = CA.id AND ap_card_fill_rate_anamnesis.type_id = apt_card_fill_rate_anamnesis.id)\
     LEFT JOIN ActionProperty_Integer apv_card_fill_rate_anamnesis ON (ap_card_fill_rate_anamnesis.id = apv_card_fill_rate_anamnesis.id)\
-	/* card_fill_rate_first_inspection */\
+    /* card_fill_rate_first_inspection */\
     LEFT JOIN ActionPropertyType apt_card_fill_rate_first_inspection ON (apt_card_fill_rate_first_inspection.actionType_id = CA.actionType_id AND apt_card_fill_rate_first_inspection.code = 'card_fill_rate_first_inspection')\
     LEFT JOIN ActionProperty ap_card_fill_rate_first_inspection ON (ap_card_fill_rate_first_inspection.action_id = CA.id AND ap_card_fill_rate_first_inspection.type_id = apt_card_fill_rate_first_inspection.id)\
     LEFT JOIN ActionProperty_Integer apv_card_fill_rate_first_inspection ON (ap_card_fill_rate_first_inspection.id = apv_card_fill_rate_first_inspection.id)\
-	/* card_fill_rate_repeated_inspection */\
+    /* card_fill_rate_repeated_inspection */\
     LEFT JOIN ActionPropertyType apt_card_fill_rate_repeated_inspection ON (apt_card_fill_rate_repeated_inspection.actionType_id = CA.actionType_id AND apt_card_fill_rate_repeated_inspection.code = 'card_fill_rate_repeated_inspection')\
     LEFT JOIN ActionProperty ap_card_fill_rate_repeated_inspection ON (ap_card_fill_rate_repeated_inspection.action_id = CA.id AND ap_card_fill_rate_repeated_inspection.type_id = apt_card_fill_rate_repeated_inspection.id)\
     LEFT JOIN ActionProperty_Integer apv_card_fill_rate_repeated_inspection ON (ap_card_fill_rate_repeated_inspection.id = apv_card_fill_rate_repeated_inspection.id)\
-	/* card_fill_rate_epicrisis */\
+    /* card_fill_rate_epicrisis */\
     LEFT JOIN ActionPropertyType apt_card_fill_rate_epicrisis ON (apt_card_fill_rate_epicrisis.actionType_id = CA.actionType_id AND apt_card_fill_rate_epicrisis.code = 'card_fill_rate_epicrisis')\
     LEFT JOIN ActionProperty ap_card_fill_rate_epicrisis ON (ap_card_fill_rate_epicrisis.action_id = CA.id AND ap_card_fill_rate_epicrisis.type_id = apt_card_fill_rate_epicrisis.id)\
     LEFT JOIN ActionProperty_Integer apv_card_fill_rate_epicrisis ON (ap_card_fill_rate_epicrisis.id = apv_card_fill_rate_epicrisis.id)\
@@ -442,6 +459,34 @@ source risar_events
         WHERE rrr.deleted = 0\
         GROUP BY rrr.event_id\
     ) RRR ON Event.id = RRR.event_id\
+    /* diagnoses */\
+    LEFT JOIN (\
+        SELECT dg.id AS dg_id, dg.setDate AS dg_setDate, dg.MKB AS mkb_code, MKB.id AS mkb_id,\
+            ds.client_id AS client_id, ds.id AS ds_id, ds.setDate AS ds_setDate, ds.endDate AS ds_endDate,\
+            max_dg_ids.dg_dates AS dg_dates\
+        FROM Diagnostic dg\
+        JOIN (\
+            SELECT MAX(dg.id) AS diagnostic_id, ds.id AS diagnosis_id, max_dg_dates.dg_dates AS dg_dates\
+            FROM Diagnostic dg\
+            JOIN (\
+                SELECT ds.id AS diagnosis_id, MAX(dg.setDate) AS max_date, GROUP_CONCAT(dg.setDate ORDER BY dg.SetDate) AS dg_dates\
+                FROM Diagnostic dg JOIN Diagnosis ds ON dg.diagnosis_id = ds.id\
+                WHERE ds.deleted = 0\
+                GROUP BY ds.id\
+            ) max_dg_dates ON (dg.setDate = max_dg_dates.max_date AND dg.diagnosis_id = max_dg_dates.diagnosis_id)\
+            JOIN Diagnosis ds ON dg.diagnosis_id = ds.id\
+            WHERE ds.deleted = 0\
+            GROUP BY ds.id\
+        ) max_dg_ids ON (dg.id = max_dg_ids.diagnostic_id AND dg.diagnosis_id = max_dg_ids.diagnosis_id)\
+        JOIN Diagnosis ds ON dg.diagnosis_id = ds.id\
+        JOIN MKB ON MKB.DiagID = dg.MKB\
+        WHERE ds.deleted = 0\
+        GROUP BY ds.id\
+    ) Diags ON (\
+        Event.client_id = Diags.client_id AND\
+        Diags.ds_setDate <= COALESCE(Event.execDate, CURDATE()) AND\
+        COALESCE(Diags.ds_endDate, CURDATE()) >= Event.setDate\
+    )\
     WHERE\
         Event.deleted = 0\
         AND IF(rbrt.code = 'pregnancy', CA.id IS NOT NULL, 1)\
@@ -486,6 +531,10 @@ source risar_events
     sql_field_string        = risk_group_codes
     sql_attr_uint           = epicrisis_id
     sql_attr_uint           = epicrisis_delivery_date
+    sql_field_string        = diag_mkbs
+    sql_attr_multi          = uint diag_mkb_ids from field
+    sql_field_string        = diag_closed_mkbs
+    sql_attr_multi          = uint diag_closed_mkb_ids from field
 }
 
 
