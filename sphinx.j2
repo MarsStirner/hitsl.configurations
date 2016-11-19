@@ -366,7 +366,8 @@ source risar_events
                SUBSTRING_INDEX(Diags.dg_dates, ",", -1) <= COALESCE(Event.execDate, CURDATE()),\
            Diags.mkb_id,\
            NULL)\
-    ) AS diag_closed_mkb_ids\
+    ) AS diag_closed_mkb_ids,\
+    GROUP_CONCAT(eupc.person_id) AS controlled_by_persons\
     FROM\
     Event\
     JOIN Person ON Person.id = Event.execPerson_id\
@@ -379,6 +380,7 @@ source risar_events
     LEFT JOIN ClientDocument ON (ClientDocument.client_id = Client.id AND ClientDocument.deleted = 0)\
     LEFT JOIN rbDocumentType ON ClientDocument.documentType_id = rbDocumentType.id\
     LEFT JOIN rbDocumentTypeGroup ON (rbDocumentType.group_id = rbDocumentTypeGroup.id AND rbDocumentTypeGroup.code = '1')\
+    LEFT JOIN Event_under_Persons_control eupc ON (Event.id = eupc.event_id and epuc.endDate is NULL)\
     /* cardAttributes */\
     LEFT JOIN Action CA ON (\
         CA.event_id = Event.id AND\
@@ -535,6 +537,7 @@ source risar_events
     sql_attr_multi          = uint diag_mkb_ids from field
     sql_field_string        = diag_closed_mkbs
     sql_attr_multi          = uint diag_closed_mkb_ids from field
+    sql_attr_multi          = uint controlled_by_persons from field
 }
 
 
