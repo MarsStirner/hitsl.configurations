@@ -367,7 +367,6 @@ source risar_events
            Diags.mkb_id,\
            NULL)\
     ) AS diag_closed_mkb_ids,\
-    GROUP_CONCAT(eupc.person_id) AS controlled_by_persons,\
     /* EventMeasure overdue */\
     em.has_overdue,\
     em.has_overdue_lab_test,\
@@ -375,7 +374,9 @@ source risar_events
     em.has_overdue_checkup,\
     em.has_overdue_healthcare,\
     em.has_overdue_hospitalization,\
-    em.has_overdue_social_preventiv\
+    em.has_overdue_social_preventiv,\
+    /* event person control*/\
+    epc.persons AS epc_persons\
     FROM\
     Event\
     JOIN Person ON Person.id = Event.execPerson_id\
@@ -388,7 +389,6 @@ source risar_events
     LEFT JOIN ClientDocument ON (ClientDocument.client_id = Client.id AND ClientDocument.deleted = 0)\
     LEFT JOIN rbDocumentType ON ClientDocument.documentType_id = rbDocumentType.id\
     LEFT JOIN rbDocumentTypeGroup ON (rbDocumentType.group_id = rbDocumentTypeGroup.id AND rbDocumentTypeGroup.code = '1')\
-    LEFT JOIN Event_under_Persons_control eupc ON (Event.id = eupc.event_id and epuc.endDate is NULL)\
     /* cardAttributes */\
     LEFT JOIN Action CA ON (\
         CA.event_id = Event.id AND\
@@ -404,24 +404,32 @@ source risar_events
         epicr.event_id = Event.id AND\
         epicr.actionType_id IN (SELECT id FROM ActionType WHERE ActionType.flatCode = 'epicrisis') AND\
         epicr.deleted = 0)\
-	/* EventMeasure overdue */\
+    /* EventMeasure overdue */\
     LEFT JOIN (\
-		SELECT \
-			em.event_id,\
-			Sum(IF(em.status = 5, 1, 0)) > 0 AS has_overdue,\
-			Sum(IF(em.status = 5 and rbmt.code = 'lab_test', 1, 0)) > 0 AS has_overdue_lab_test,\
-			Sum(IF(em.status = 5 and rbmt.code = 'func_test', 1, 0)) > 0 AS has_overdue_func_test,\
-			Sum(IF(em.status = 5 and rbmt.code = 'checkup', 1, 0)) > 0 AS has_overdue_checkup,\
-			Sum(IF(em.status = 5 and rbmt.code = 'healthcare', 1, 0)) > 0 AS has_overdue_healthcare,\
-			Sum(IF(em.status = 5 and rbmt.code = 'hospitalization', 1, 0)) > 0 AS has_overdue_hospitalization,\
-			Sum(IF(em.status = 5 and rbmt.code = 'social-preventiv', 1, 0)) > 0 AS has_overdue_social_preventiv\
-		FROM EventMeasure em\
-			LEFT JOIN ExpertSchemeMeasure esm ON esm.id = em.id\
-			JOIN Measure m ON (m.id = esm.measure_id or m.id = em.measure_id)\
-			JOIN rbMeasureType rbmt ON m.measureType_id = rbmt.id\
-		WHERE em.deleted = 0\
-		GROUP BY em.event_id) em\
-	ON (em.event_id = Event.id)\
+        SELECT \
+            em.event_id,\
+            Sum(IF(em.status = 5, 1, 0)) > 0 AS has_overdue,\
+            Sum(IF(em.status = 5 and rbmt.code = 'lab_test', 1, 0)) > 0 AS has_overdue_lab_test,\
+            Sum(IF(em.status = 5 and rbmt.code = 'func_test', 1, 0)) > 0 AS has_overdue_func_test,\
+            Sum(IF(em.status = 5 and rbmt.code = 'checkup', 1, 0)) > 0 AS has_overdue_checkup,\
+            Sum(IF(em.status = 5 and rbmt.code = 'healthcare', 1, 0)) > 0 AS has_overdue_healthcare,\
+            Sum(IF(em.status = 5 and rbmt.code = 'hospitalization', 1, 0)) > 0 AS has_overdue_hospitalization,\
+            Sum(IF(em.status = 5 and rbmt.code = 'social_preventiv', 1, 0)) > 0 AS has_overdue_social_preventiv\
+        FROM EventMeasure em\
+            LEFT JOIN ExpertSchemeMeasure esm ON esm.id = em.id\
+            JOIN Measure m ON (m.id = esm.measure_id or m.id = em.measure_id)\
+            JOIN rbMeasureType rbmt ON m.measureType_id = rbmt.id\
+        WHERE em.deleted = 0\
+        GROUP BY em.event_id) em\
+    ON (em.event_id = Event.id)\
+    /* event person control */\
+    LEFT JOIN (\
+        SELECT epc.event_id AS event_id, GROUP_CONCAT(epc.person_id) AS persons\
+        FROM\
+        EventPersonsControl epc\
+        WHERE epc.endDate IS NULL\
+        GROUP BY epc.event_id\
+    ) epc ON (Event.id = epc.event_id)\
     \
     /* property values */\
     \
@@ -563,7 +571,6 @@ source risar_events
     sql_attr_multi          = uint diag_mkb_ids from field
     sql_field_string        = diag_closed_mkbs
     sql_attr_multi          = uint diag_closed_mkb_ids from field
-    sql_attr_multi          = uint controlled_by_persons from field
     sql_attr_uint           = has_overdue
     sql_attr_uint           = has_overdue_lab_test
     sql_attr_uint           = has_overdue_func_test
@@ -571,6 +578,7 @@ source risar_events
     sql_attr_uint           = has_overdue_healthcare
     sql_attr_uint           = has_overdue_hospitalization
     sql_attr_uint           = has_overdue_social_preventiv
+    sql_attr_multi          = uint epc_persons from field
 }
 
 
