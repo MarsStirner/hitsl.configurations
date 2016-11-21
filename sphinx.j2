@@ -630,7 +630,7 @@ source risar_events_short
     JOIN EventType et ON e.eventType_id = et.id \
     JOIN rbRequestType ON et.requestType_id = rbRequestType.id AND rbRequestType.code IN ('pregnancy', 'gynecological') \
     JOIN Client c on c.id = e.client_id \
-    WHERE e.deleted = 0 \
+    WHERE e.deleted = 0 AND e.execDate IS NULL \
     GROUP BY e.id
 
     sql_field_string      = external_id
