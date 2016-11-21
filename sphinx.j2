@@ -325,7 +325,7 @@ source risar_events
     UNIX_TIMESTAMP(DATE(apv_modify_date.value)) AS card_modify_date,\
     GROUP_CONCAT(UNIX_TIMESTAMP(DATE(checkup.begDate)) DIV 86400 SEPARATOR ',') AS checkups,\
     /* latest pregnancy checkup date or event setdate */\
-    UNIX_TIMESTAMP(COALESCE(MAX(checkup.begDate), Event.setDate)) AS latest_checkup_date,\
+    UNIX_TIMESTAMP(COALESCE(MAX(checkup.begDate), Event.setDate)) DIV 86400 AS latest_checkup_date,\
     rbrt.id as request_type_id,\
     rbrt.code as card_req_type,\
     /* pregnancy week */\
