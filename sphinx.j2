@@ -134,8 +134,8 @@ source event_service
 
     sql_query_pre = SET @a := 1;
     sql_query = \
+SELECT @a := @a + 1 AS id, UNITED.* FROM (\
     SELECT \
-    @a := @a + 1 AS id, \
     pli.id as price_list_item_id, \
     pli.service_id as service_id, \
     pli.serviceCodeOW as service_code, \
@@ -162,7 +162,6 @@ source event_service
     UNION  \
     \
     SELECT \
-    @a := @a + 1 AS id, \
     pli.id as price_list_item_id, \
     pli.service_id as service_id, \
     pli.serviceCodeOW as service_code, \
@@ -188,7 +187,8 @@ source event_service
     ) at_with_services ON pli.service_id=at_with_services.service_id \
     WHERE \
     pli.deleted=0 AND pl.deleted=0 AND (CURDATE() BETWEEN pli.begDate AND pli.endDate) AND \
-    at_with_services.id IS NULL AND s.isComplex = 1
+    at_with_services.id IS NULL AND s.isComplex = 1\
+) AS UNITED
 
 
     #        -- GROUP_CONCAT(DISTINCT e.eventType_id SEPARATOR ',') as eventType_id, \
