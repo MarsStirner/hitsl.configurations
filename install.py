@@ -6,6 +6,7 @@ import yaml
 import jinja2
 import argparse
 import loader
+import json
 
 __author__ = 'viruzzz-kun'
 
@@ -45,7 +46,12 @@ def main():
             return template.render(context)
         return ''
 
+    @jinja2.contextfilter
+    def do_tojson(context, o):
+        return json.dumps(o)
+
     jinja_env.filters['recurse'] = do_recurse
+    jinja_env.filters['tojson'] = do_tojson
 
     for name, this in config['subsystems'].iteritems():
         this['name'] = name
