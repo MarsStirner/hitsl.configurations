@@ -61,3 +61,5 @@ sphinx:
   extension: conf
 crontab:
   extension: cron
+shell:
+  extension: sh

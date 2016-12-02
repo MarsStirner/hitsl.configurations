@@ -48,7 +48,9 @@ def main():
 
     @jinja2.contextfilter
     def do_tojson(context, o):
-        return json.dumps(o)
+        if o:
+            return json.dumps(o)
+        return '{}'
 
     jinja_env.filters['recurse'] = do_recurse
     jinja_env.filters['tojson'] = do_tojson

@@ -71,6 +71,70 @@ common:
 
     FILE_STORAGE_PATH: &FILE_STORAGE_PATH '/tmp'
 
+  # Блок с настройками AMQP для интеграции ТМИС со внешними подсистемами
+  amqp: &AMQP
+    # Настройки соединения с сервером
+    server: &AMQP_SERVER
+      host: "10.1.2.12"
+      port: "5672"
+      managementPort: "15672"
+      virtualHost: "/"
+    # Список пользователей
+    users:
+      - &AMQP_USER_FINANCE
+        username: "tmis_finance"
+        password: "rabbitrules!"
+        virtaulHost: "/"
+        tags:
+          - administrator
+          - monitoring
+      - &AMQP_USER_ADMIN
+        username: "guest"
+        password: "guest"
+        virtaulHost: "/"
+        tags:
+          - administrator
+    admin: *AMQP_USER_ADMIN
+    # Список обменников
+    exchanges:
+      # Обменник для работы со счетами (ТМИС-1С финансы)
+      - name: &AMQP_EXCHANGE_INVOICE            "exchange.tmis.finance.invoice"
+        type: x-delayed-message
+        durable: true
+        auto_delete: false
+        arguments:
+          x-delayed-type: "topic"
+    # Список очередей
+    queues:
+      - name: &AMQP_QUEUE_INVOICE_CREATED       "queue.tmis.finance.invoice.created"
+        durable: true
+        auto_delete: false
+      - name: &AMQP_QUEUE_INVOICE_DELETED       "queue.tmis.finance.invoice.deleted"
+        durable: true
+        auto_delete: false
+      - name: &AMQP_QUEUE_INVOICE_REFUND        "queue.tmis.finance.invoice.refund"
+        durable: true
+        auto_delete: false
+      - name: &AMQP_QUEUE_INVOICE_ERROR         "queue.tmis.finance.invoice.error"
+        durable: true
+        auto_delete: false
+    bindings:
+      # Invoice bindings
+      - exchange:     *AMQP_EXCHANGE_INVOICE
+        queue:        *AMQP_QUEUE_INVOICE_CREATED
+        routing_key:  "create"
+      - exchange:     *AMQP_EXCHANGE_INVOICE
+        queue:        *AMQP_QUEUE_INVOICE_DELETED
+        routing_key:  "delete"
+      - exchange:     *AMQP_EXCHANGE_INVOICE
+        queue:        *AMQP_QUEUE_INVOICE_REFUND
+        routing_key:  "refund"
+      - &AMQP_ERROR_BINDING_INVOICE
+        exchange:     *AMQP_EXCHANGE_INVOICE
+        queue:        *AMQP_QUEUE_INVOICE_ERROR
+        routing_key:  "error"
+
+
   system_prefs: &SYSTEM_PREFS
     # режим работы 1-стандартный, 2+ - различные интеграции. См. enum SystemMode
     mode: 1
@@ -85,12 +149,6 @@ common:
       # frontend_additional_href_protocols: ''
     regional:
       uses_regional_services: false
-
-  mis_mq_integrations: &MIS_MQ_INTEGRATIONS
-    rabbit_url: 'amqp://guest:guest@127.0.0.1:5672//'
-    1C_PAYMENT:
-      invoice_queue: ''
-      invoice_exchange: ''
 
 deployment:
   base_dir: .
@@ -176,7 +234,6 @@ subsystems:
       JASPER_PASSWORD: ''
 
       system_prefs: *SYSTEM_PREFS
-      MIS_MQ_INTEGRATIONS: *MIS_MQ_INTEGRATIONS
 
     url: *HIPPO_URL
 
@@ -523,6 +580,22 @@ subsystems:
           amqp: {} # Здесь будут настройки соединения с RabbitMQ
           risar_url_root: http://localhost:6600/risar/api/integration  # корень интеграционного модуля в РИСАР
 
+  # Модуль с настройками для интеграции между ТМИС и 1С в части финансовых траназкций
+  mq_integration_finance:
+    app:
+      amqp:
+        server: *AMQP_SERVER
+        user: *AMQP_USER_FINANCE
+        queue.created: *AMQP_QUEUE_INVOICE_CREATED
+        queue.deleted: *AMQP_QUEUE_INVOICE_DELETED
+        queue.refund: *AMQP_QUEUE_INVOICE_REFUND
+        error: *AMQP_ERROR_BINDING_INVOICE
+      financeWebservice:
+        url: "http://dnosov-nb:8080/Mock_1Cwebservice?wsdl"
+        targetNamespace: "http://schemas.xmlsoap.org/soap/envelope"
+        name: "Exchange_MIS"
+
+
   sphinx:
     configens:
       supervisor:
@@ -610,3 +683,9 @@ subsystems:
 
           user={{ common.system_user.uid }}
           group={{ common.system_user.gid }}
+
+  # Сгенерить скрипты для кролика
+  rabbitmq:
+    configens:
+      shell:
+        template: !readfile ./rabbitmq.sh
