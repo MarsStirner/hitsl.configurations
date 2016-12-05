@@ -417,7 +417,7 @@ source risar_events
             Sum(IF(em.status = 5 and rbmt.code = 'hospitalization', 1, 0)) > 0 AS has_overdue_hospitalization,\
             Sum(IF(em.status = 5 and rbmt.code = 'social_preventiv', 1, 0)) > 0 AS has_overdue_social_preventiv\
         FROM EventMeasure em\
-            LEFT JOIN ExpertSchemeMeasure esm ON esm.id = em.id\
+            LEFT JOIN ExpertSchemeMeasure esm ON esm.id = em.schemeMeasure_id\
             JOIN Measure m ON (m.id = esm.measure_id or m.id = em.measure_id)\
             JOIN rbMeasureType rbmt ON m.measureType_id = rbmt.id\
         WHERE em.deleted = 0\
