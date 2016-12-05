@@ -71,6 +71,10 @@ common:
 
     FILE_STORAGE_PATH: &FILE_STORAGE_PATH '/tmp'
 
+    external_cas:
+      enabled: false
+      ext_cookie_name: &EXT_COOKIE_NAME TGT-CAS
+
   # Блок с настройками AMQP для интеграции ТМИС со внешними подсистемами
   amqp: &AMQP
     # Настройки соединения с сервером
@@ -498,9 +502,19 @@ subsystems:
           clean_period: 10
           expiry_time: 3600
           domain_map: {}
+#        bouser_hitsl.external_castiel: # Аутентификация
+#          ext_url: ''
+#          self_url: *COLDSTAR_URL
+#          cookie_name: *CASTIEL_AUTH_TOKEN
+#          cookie_domain: *COOKIE_DOMAIN
+#          ext_cookie_name: *EXT_COOKIE_NAME
+#          clean_period: 10
+#          expiry_time: 3600
+#          domain_map: {}
         bouser_simplelogs:
           url: *SIMPLELOGS_URL
         bouser.ext.hitsl.castiel.auth.mis: # Адаптер аутентификации для ТМИС
+#        bouser.ext.hitsl.external_castiel.auth.mis: # Адаптер аутентификации для ТМИС
 
         bouser.ext.ezekiel: # Блокировки
           short_timeout: 25
