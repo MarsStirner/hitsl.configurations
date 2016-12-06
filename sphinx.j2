@@ -377,7 +377,9 @@ source risar_events
     em.has_overdue_hospitalization,\
     em.has_overdue_social_preventiv,\
     /* event person control*/\
-    epc.persons AS epc_persons\
+    epc.persons AS epc_persons,\
+     /* missed checkups */\
+    IF(AllCheckups.id IS NULL, 1, 0) AS has_missed_checkups\
     FROM\
     Event\
     JOIN Person ON Person.id = Event.execPerson_id\
@@ -526,6 +528,45 @@ source risar_events
         Diags.ds_setDate <= COALESCE(Event.execDate, CURDATE()) AND\
         COALESCE(Diags.ds_endDate, CURDATE()) >= Event.setDate\
     )\
+    /* missed checkups */\
+    LEFT OUTER JOIN (\
+        SELECT\
+            `Action`.id AS action_id,\
+            `Action`.event_id AS event_id, `Action`.`begDate` AS beg_date,\
+            `Action`.`endDate` AS end_date, `ActionProperty_Date`.value AS next_date\
+        FROM `Action`\
+        INNER JOIN (\
+            SELECT max(`Action`.id) AS action_id, `Action`.event_id AS event_id\
+            FROM `ActionType`, `Action` INNER JOIN (\
+                SELECT max(`Action`.`begDate`) AS max_beg_date, `Event`.id AS event_id\
+                FROM `Action` INNER JOIN `Event` ON `Event`.id = `Action`.event_id\
+                INNER JOIN `EventType` ON `EventType`.id = `Event`.`eventType_id`\
+                INNER JOIN `rbRequestType` ON `rbRequestType`.id = `EventType`.`requestType_id`\
+                INNER JOIN `ActionType` ON `ActionType`.id = `Action`.`actionType_id`\
+                INNER JOIN `ActionProperty` ON `Action`.id = `ActionProperty`.action_id\
+                INNER JOIN `ActionPropertyType` ON `ActionPropertyType`.id = `ActionProperty`.type_id\
+                INNER JOIN `ActionProperty_Date` ON `ActionProperty`.id = `ActionProperty_Date`.id\
+                WHERE `Event`.deleted = 0 AND `Action`.deleted = 0 AND `rbRequestType`.code = "pregnancy" AND\
+                    `ActionType`.`flatCode` IN ("risarFirstInspection", "risarSecondInspection", "risarPCCheckUp") AND\
+                    `ActionPropertyType`.code = "next_date" AND `ActionProperty_Date`.value <= curdate()\
+                GROUP BY `Event`.id\
+            ) AS `MaxActionBegDates` ON `MaxActionBegDates`.max_beg_date = `Action`.`begDate`\
+                AND `MaxActionBegDates`.event_id = `Action`.event_id\
+            WHERE `Action`.deleted = 0 AND `ActionType`.`flatCode` IN ("risarFirstInspection", "risarSecondInspection", "risarPCCheckUp")\
+            GROUP BY `Action`.event_id\
+        ) AS `EventLatestCheckups` ON `EventLatestCheckups`.action_id = `Action`.id\
+        INNER JOIN `ActionProperty` ON `Action`.id = `ActionProperty`.action_id\
+        INNER JOIN `ActionPropertyType` ON `ActionPropertyType`.id = `ActionProperty`.type_id\
+        INNER JOIN `ActionProperty_Date` ON `ActionProperty`.id = `ActionProperty_Date`.id\
+        WHERE `ActionPropertyType`.code = "next_date"\
+    ) AS `EventLatestInspectionsWithNextDate` ON `EventLatestInspectionsWithNextDate`.event_id = `Event`.id\
+        LEFT JOIN (\
+        SELECT a.id, a.begDate, a.event_id\
+        FROM Action a\
+        JOIN ActionType at ON a.actionType_id = at.id\
+        WHERE a.deleted = 0 AND at.flatCode in ("risarFirstInspection", "risarSecondInspection", "risarPCCheckUp")\
+    ) AS `AllCheckups` ON AllCheckups.event_id = Event.id\
+      AND EventLatestInspectionsWithNextDate.beg_date < AllCheckups.begDate AND EventLatestInspectionsWithNextDate.next_date >= AllCheckups.begDate\
     WHERE\
         Event.deleted = 0\
         AND IF(rbrt.code = 'pregnancy', CA.id IS NOT NULL, 1)\
@@ -583,6 +624,7 @@ source risar_events
     sql_attr_uint           = has_overdue_hospitalization
     sql_attr_uint           = has_overdue_social_preventiv
     sql_attr_multi          = uint epc_persons from field
+    sql_attr_uint           = has_missed_checkups
 }
 
 
