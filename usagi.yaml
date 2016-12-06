@@ -148,6 +148,8 @@ common:
     #  - '78000000000'
     integration:
       BARS_MIS_URL: http://127.0.0.1
+      # Внешний url для записи пациентов на прием, если не задан, то берется внутренний url
+      external_schedule_url:
     ui:
       # angularjs блокирует ссылки с протоколами, которые не относятся к разрешенным
       # frontend_additional_href_protocols: ''
