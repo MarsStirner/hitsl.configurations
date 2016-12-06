@@ -369,6 +369,7 @@ subsystems:
     app: !inherit
       ancestors:
         - *UWSGI_APPS
+        - *USER_APPS
       DEBUG: True
       PROJECT_NAME: simplelogs
       TITLE: Подсистема журналирования
@@ -416,6 +417,7 @@ subsystems:
     app: !inherit
       ancestors:
         - *UWSGI_APPS
+        - *USER_APPS
       DEBUG: True
       SQLALCHEMY_DATABASE_URI: *SQLALCHEMY
       PROJECT_NAME: Devourer
