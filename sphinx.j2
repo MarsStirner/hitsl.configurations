@@ -323,8 +323,8 @@ source risar_events
     apv_wg.value AS client_work_code,\
     CONCAT_WS(' ', Person.lastName, Person.firstName, Person.patrName) AS person_name,\
     apv_risk.value AS risk,\
-    UNIX_TIMESTAMP(DATE(apv_bdate.value)) DIV 86400 AS bdate,\
-    UNIX_TIMESTAMP(DATE(apv_psdate.value)) DIV 86400 AS psdate,\
+    UNIX_TIMESTAMP(DATE(apv_bdate.value)) AS bdate,\
+    UNIX_TIMESTAMP(DATE(apv_psdate.value)) AS psdate,\
     UNIX_TIMESTAMP(DATE(apv_modify_date.value)) DIV 86400 AS card_modify_date,\
     GROUP_CONCAT(UNIX_TIMESTAMP(DATE(checkup.begDate)) DIV 86400 SEPARATOR ',') AS checkups,\
     rbRequestType.id as request_type_id\
