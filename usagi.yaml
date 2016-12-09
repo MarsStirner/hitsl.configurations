@@ -124,19 +124,22 @@ common:
         durable: true
         auto_delete: false
         arguments:
-          expires: 120000
+          x-message-ttl: 120000
       - name: &AMQP_QUEUE_INVOICE_ERROR         queue.tmis.finance.invoice.error
         durable: true
         auto_delete: false
     bindings:
       # Invoice bindings
-      - exchange:     *AMQP_EXCHANGE_INVOICE
+      - &AMQP_CREATE_BINDING_INVOICE
+        exchange:     *AMQP_EXCHANGE_INVOICE
         queue:        *AMQP_QUEUE_INVOICE_CREATED
         routing_key:  create
-      - exchange:     *AMQP_EXCHANGE_INVOICE
+      - &AMQP_DELETE_BINDING_INVOICE
+        exchange:     *AMQP_EXCHANGE_INVOICE
         queue:        *AMQP_QUEUE_INVOICE_DELETED
         routing_key:  delete
-      - exchange:     *AMQP_EXCHANGE_INVOICE
+      - &AMQP_REFUND_BINDING_INVOICE
+        exchange:     *AMQP_EXCHANGE_INVOICE
         queue:        *AMQP_QUEUE_INVOICE_REFUND
         routing_key:  refund
       - &AMQP_UPDATE_BINDING_INVOICE
@@ -628,7 +631,7 @@ subsystems:
         queue.refund: *AMQP_QUEUE_INVOICE_REFUND
         error: *AMQP_ERROR_BINDING_INVOICE
       financeWebservice:
-        url: "http://dnosov-nb:8080/Mock_1Cwebservice?wsdl"
+        url: "http://127.0.0.1/Mock_1Cwebservice?wsdl"
         targetNamespace: "http://schemas.xmlsoap.org/soap/envelope"
         name: "Exchange_MIS"
 
