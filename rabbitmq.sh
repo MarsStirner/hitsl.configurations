@@ -74,7 +74,7 @@ function declareQueues() {
     echo 'Declare queues'
     {% for q in common.amqp.queues %}
         rabbitmqadmin -H ${HOST} -P ${PORT} -V ${VHOST} -u ${USER} -p ${PASSWORD} \
-          declare queue name='{{ q.name }}' durable={{ q.durable|lower }} auto_delete={{ q.auto_delete|lower }}
+          declare queue name='{{ q.name }}' durable={{ q.durable|lower }} auto_delete={{ q.auto_delete|lower }} arguments='{{ q.arguments | tojson }}'
     {% endfor %}
     rabbitmqadmin -H ${HOST} -P ${PORT} -V ${VHOST} -u ${USER} -p ${PASSWORD} list queues
 }

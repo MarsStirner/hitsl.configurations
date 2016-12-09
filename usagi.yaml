@@ -79,64 +79,74 @@ common:
   amqp: &AMQP
     # Настройки соединения с сервером
     server: &AMQP_SERVER
-      host: "10.1.2.12"
-      port: "5672"
-      managementPort: "15672"
-      virtualHost: "/"
+      host: 127.0.0.1
+      port: 5672
+      managementPort: 15672
+      virtualHost: /
     # Список пользователей
     users:
       - &AMQP_USER_FINANCE
-        username: "tmis_finance"
-        password: "rabbitrules!"
-        virtaulHost: "/"
+        username: tmis_finance
+        password: rabbitrules!
+        virtaulHost: /
         tags:
           - administrator
           - monitoring
       - &AMQP_USER_ADMIN
-        username: "guest"
-        password: "guest"
-        virtaulHost: "/"
+        username: guest
+        password: guest
+        virtaulHost: /
         tags:
           - administrator
+    amqp_url: &AMQP_URL amqp://guest:guest@localhost:5672//
     admin: *AMQP_USER_ADMIN
     # Список обменников
     exchanges:
       # Обменник для работы со счетами (ТМИС-1С финансы)
-      - name: &AMQP_EXCHANGE_INVOICE            "exchange.tmis.finance.invoice"
+      - name: &AMQP_EXCHANGE_INVOICE            exchange.tmis.finance.invoice
         type: x-delayed-message
         durable: true
         auto_delete: false
         arguments:
-          x-delayed-type: "topic"
+          x-delayed-type: topic
     # Список очередей
     queues:
-      - name: &AMQP_QUEUE_INVOICE_CREATED       "queue.tmis.finance.invoice.created"
+      - name: &AMQP_QUEUE_INVOICE_CREATED       queue.tmis.finance.invoice.created
         durable: true
         auto_delete: false
-      - name: &AMQP_QUEUE_INVOICE_DELETED       "queue.tmis.finance.invoice.deleted"
+      - name: &AMQP_QUEUE_INVOICE_DELETED       queue.tmis.finance.invoice.deleted
         durable: true
         auto_delete: false
-      - name: &AMQP_QUEUE_INVOICE_REFUND        "queue.tmis.finance.invoice.refund"
+      - name: &AMQP_QUEUE_INVOICE_REFUND        queue.tmis.finance.invoice.refund
         durable: true
         auto_delete: false
-      - name: &AMQP_QUEUE_INVOICE_ERROR         "queue.tmis.finance.invoice.error"
+      - name: &AMQP_QUEUE_INVOICE_UPDATE        queue.tmis.finance.invoice.updated
+        durable: true
+        auto_delete: false
+        arguments:
+          expires: 120000
+      - name: &AMQP_QUEUE_INVOICE_ERROR         queue.tmis.finance.invoice.error
         durable: true
         auto_delete: false
     bindings:
       # Invoice bindings
       - exchange:     *AMQP_EXCHANGE_INVOICE
         queue:        *AMQP_QUEUE_INVOICE_CREATED
-        routing_key:  "create"
+        routing_key:  create
       - exchange:     *AMQP_EXCHANGE_INVOICE
         queue:        *AMQP_QUEUE_INVOICE_DELETED
-        routing_key:  "delete"
+        routing_key:  delete
       - exchange:     *AMQP_EXCHANGE_INVOICE
         queue:        *AMQP_QUEUE_INVOICE_REFUND
-        routing_key:  "refund"
+        routing_key:  refund
+      - &AMQP_UPDATE_BINDING_INVOICE
+        exchange:     *AMQP_EXCHANGE_INVOICE
+        queue:        *AMQP_QUEUE_INVOICE_UPDATE
+        routing_key:  update
       - &AMQP_ERROR_BINDING_INVOICE
         exchange:     *AMQP_EXCHANGE_INVOICE
         queue:        *AMQP_QUEUE_INVOICE_ERROR
-        routing_key:  "error"
+        routing_key:  error
 
 
   system_prefs: &SYSTEM_PREFS
@@ -240,6 +250,15 @@ subsystems:
       JASPER_PASSWORD: ''
 
       system_prefs: *SYSTEM_PREFS
+
+      AMQP_INTEGRATIONS:
+        amqp_url: *AMQP_URL
+        bindings:
+          invoice:
+            create: *AMQP_CREATE_BINDING_INVOICE
+            delete: *AMQP_DELETE_BINDING_INVOICE
+            refund: *AMQP_REFUND_BINDING_INVOICE
+            update: *AMQP_UPDATE_BINDING_INVOICE
 
     url: *HIPPO_URL
 
