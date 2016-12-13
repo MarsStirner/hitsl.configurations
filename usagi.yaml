@@ -166,6 +166,9 @@ common:
     ui:
       # angularjs блокирует ссылки с протоколами, которые не относятся к разрешенным
       # frontend_additional_href_protocols: ''
+      extended_search:
+        common_access_curator:
+        common_access_doctor:
     regional:
       uses_regional_services: false
 
