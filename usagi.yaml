@@ -258,7 +258,8 @@ subsystems:
       system_prefs: *SYSTEM_PREFS
       files_upload:
         max_file_size: 10MB
-        pattern: ".pdf, .bmp, .jpg, .jpeg, .png, .tiff, .gif, .psd"
+        # Пример pattern: ".pdf,.bmp,.jpg,.jpeg,.png,.tiff,.gif,.psd"
+        pattern: ""
 
       AMQP_INTEGRATIONS:
         amqp_url: *AMQP_URL
