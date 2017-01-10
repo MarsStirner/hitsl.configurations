@@ -88,13 +88,13 @@ common:
       - &AMQP_U_ADMIN
         username: "guest"
         password: "guest"
-        virtaulHost: "/"
+        virtualHost: "/"
         tags:
           - administrator
       - &AMQP_U_FINANCE
         username: "tmis_finance"
         password: "rabbitrules!"
-        virtaulHost: "/"
+        virtualHost: "/"
         tags:
           - administrator
           - monitoring
@@ -170,8 +170,8 @@ common:
       - name: &AMQP_Q_MEDICAL_PRESCRIPTION_1C_PHARMACY_ERROR queue.tmis.1c_pharmacy.medical_prescription.error
         durable: true
         auto_delete: false
-    # Связки между обменниками и очередями с использованием текстового ключа [префикс yaml-якорей AMQP_B_*]    
-    bindings: 
+    # Связки между обменниками и очередями с использованием текстового ключа [префикс yaml-якорей AMQP_B_*]
+    bindings:
       # Invoice bindings
       - &AMQP_B_INVOICE_CREATE
         exchange:     *AMQP_E_INVOICE
@@ -343,6 +343,10 @@ subsystems:
             delete: *AMQP_B_INVOICE_DELETE
             refund: *AMQP_B_INVOICE_REFUND
             update: *AMQP_B_INVOICE_UPDATE
+          hosp:
+            create: *AMQP_B_HOSPITALIZATION_CREATE
+            close: *AMQP_B_HOSPITALIZATION_CLOSE
+            moving: *AMQP_B_HOSPITALIZATION_MOVING
 
     url: *HIPPO_URL
 
