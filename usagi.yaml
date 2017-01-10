@@ -82,75 +82,147 @@ common:
       host: 127.0.0.1
       port: 5672
       managementPort: 15672
-      virtualHost: /
-    # Список пользователей
+      virtualHost: "/"
+    # Список пользователей  [префикс yaml-якорей AMQP_U_*]
     users:
-      - &AMQP_USER_FINANCE
-        username: tmis_finance
-        password: rabbitrules!
-        virtaulHost: /
+      - &AMQP_U_ADMIN
+        username: "guest"
+        password: "guest"
+        virtaulHost: "/"
+        tags:
+          - administrator
+      - &AMQP_U_FINANCE
+        username: "tmis_finance"
+        password: "rabbitrules!"
+        virtaulHost: "/"
         tags:
           - administrator
           - monitoring
-      - &AMQP_USER_ADMIN
-        username: guest
-        password: guest
-        virtaulHost: /
-        tags:
-          - administrator
+        permissions:
+          - vhost: "/"
+            conf:  ".*"
+            write: ".*"
+            read:  ".*"
+      - &AMQP_U_1C_PHARMACY
+        username: "1c_pharmacy"
+        password: "mq_pharmacy"
+        tags: []
+        permissions:
+         - vhost: "/"
+           conf:  ''
+           write: '^exchange\.1c_pharmacy\..*$'
+           read:  '^queue\.tmis\.1c_pharmacy\..*$'
     amqp_url: &AMQP_URL amqp://guest:guest@localhost:5672//
-    admin: *AMQP_USER_ADMIN
-    # Список обменников
+    admin: *AMQP_U_ADMIN
+    # Список обменников [префикс yaml-якорей AMQP_E_*]
     exchanges:
       # Обменник для работы со счетами (ТМИС-1С финансы)
-      - name: &AMQP_EXCHANGE_INVOICE            exchange.tmis.finance.invoice
+      - name: &AMQP_E_INVOICE                              exchange.tmis.finance.invoice
         type: x-delayed-message
         durable: true
         auto_delete: false
         arguments:
           x-delayed-type: topic
-    # Список очередей
+      # Обменник для работы с госпитализациями
+      - name: &AMQP_E_HOSPITALIZATION                      exchange.tmis.hospitalization
+        type: x-delayed-message
+        durable: true
+        auto_delete: false
+        arguments:
+          x-delayed-type: topic
+      # Обменник для работы с Лекарственными Назначениями (ЛН)
+      - name: &AMQP_E_MEDICAL_PRESCRIPTION                 exchange.tmis.medical_prescription
+        type: x-delayed-message
+        durable: true
+        auto_delete: false
+        arguments:
+          x-delayed-type: topic
+    # Список очередей [префикс yaml-якорей AMQP_Q_*]
     queues:
-      - name: &AMQP_QUEUE_INVOICE_CREATED       queue.tmis.finance.invoice.created
+      - name: &AMQP_Q_INVOICE_CREATED                      queue.tmis.finance.invoice.created
         durable: true
         auto_delete: false
-      - name: &AMQP_QUEUE_INVOICE_DELETED       queue.tmis.finance.invoice.deleted
+      - name: &AMQP_Q_INVOICE_DELETED                      queue.tmis.finance.invoice.deleted
         durable: true
         auto_delete: false
-      - name: &AMQP_QUEUE_INVOICE_REFUND        queue.tmis.finance.invoice.refund
+      - name: &AMQP_Q_INVOICE_REFUND                       queue.tmis.finance.invoice.refund
         durable: true
         auto_delete: false
-      - name: &AMQP_QUEUE_INVOICE_UPDATE        queue.tmis.finance.invoice.updated
+      - name: &AMQP_Q_INVOICE_UPDATE                       queue.tmis.finance.invoice.updated
         durable: true
         auto_delete: false
         arguments:
           x-message-ttl: 120000
-      - name: &AMQP_QUEUE_INVOICE_ERROR         queue.tmis.finance.invoice.error
+      - name: &AMQP_Q_INVOICE_ERROR                        queue.tmis.finance.invoice.error
         durable: true
         auto_delete: false
-    bindings:
+      # Интеграция ТМИС Госпитализации - 1С Аптека
+      - name: &AMQP_Q_HOSPITALIZATION_1C_PHARMACY          queue.tmis.1c_pharmacy.hospitalization
+        durable: true
+        auto_delete: false
+      - name: &AMQP_Q_HOSPITALIZATION_1C_PHARMACY_ERROR    queue.tmis.1c_pharmacy.hospitalization.error
+        durable: true
+        auto_delete: false
+      # Интеграция ТМИС Листы Назначений - 1С Аптека
+      - name: &AMQP_Q_MEDICAL_PRESCRIPTION_1C_PHARMACY     queue.tmis.1c_pharmacy.medical_prescription
+        durable: true
+        auto_delete: false
+      - name: &AMQP_Q_MEDICAL_PRESCRIPTION_1C_PHARMACY_ERROR queue.tmis.1c_pharmacy.medical_prescription.error
+        durable: true
+        auto_delete: false
+    # Связки между обменниками и очередями с использованием текстового ключа [префикс yaml-якорей AMQP_B_*]    
+    bindings: 
       # Invoice bindings
-      - &AMQP_CREATE_BINDING_INVOICE
-        exchange:     *AMQP_EXCHANGE_INVOICE
-        queue:        *AMQP_QUEUE_INVOICE_CREATED
+      - &AMQP_B_INVOICE_CREATE
+        exchange:     *AMQP_E_INVOICE
+        queue:        *AMQP_Q_INVOICE_CREATED
         routing_key:  create
-      - &AMQP_DELETE_BINDING_INVOICE
-        exchange:     *AMQP_EXCHANGE_INVOICE
-        queue:        *AMQP_QUEUE_INVOICE_DELETED
+      - &AMQP_B_INVOICE_DELETE
+        exchange:     *AMQP_E_INVOICE
+        queue:        *AMQP_Q_INVOICE_DELETED
         routing_key:  delete
-      - &AMQP_REFUND_BINDING_INVOICE
-        exchange:     *AMQP_EXCHANGE_INVOICE
-        queue:        *AMQP_QUEUE_INVOICE_REFUND
+      - &AMQP_B_INVOICE_REFUND
+        exchange:     *AMQP_E_INVOICE
+        queue:        *AMQP_Q_INVOICE_REFUND
         routing_key:  refund
-      - &AMQP_UPDATE_BINDING_INVOICE
-        exchange:     *AMQP_EXCHANGE_INVOICE
-        queue:        *AMQP_QUEUE_INVOICE_UPDATE
+      - &AMQP_B_INVOICE_UPDATE
+        exchange:     *AMQP_E_INVOICE
+        queue:        *AMQP_Q_INVOICE_UPDATE
         routing_key:  update
-      - &AMQP_ERROR_BINDING_INVOICE
-        exchange:     *AMQP_EXCHANGE_INVOICE
-        queue:        *AMQP_QUEUE_INVOICE_ERROR
+      - &AMQP_B_INVOICE_ERROR
+        exchange:     *AMQP_E_INVOICE
+        queue:        *AMQP_Q_INVOICE_ERROR
         routing_key:  error
-
+      # Интеграция ТМИС Госпитализации - 1С Аптека
+      - &AMQP_B_HOSPITALIZATION_CREATE
+        exchange:     *AMQP_E_HOSPITALIZATION
+        queue:        *AMQP_Q_HOSPITALIZATION_1C_PHARMACY
+        routing_key:  create
+      - &AMQP_B_HOSPITALIZATION_CLOSE
+        exchange:     *AMQP_E_HOSPITALIZATION
+        queue:        *AMQP_Q_HOSPITALIZATION_1C_PHARMACY
+        routing_key:  close
+      - &AMQP_B_HOSPITALIZATION_MOVING
+        exchange:     *AMQP_E_HOSPITALIZATION
+        queue:        *AMQP_Q_HOSPITALIZATION_1C_PHARMACY
+        routing_key:  moving
+      - &AMQP_B_HOSPITALIZATION_ERROR
+        exchange:     *AMQP_E_HOSPITALIZATION
+        queue:        *AMQP_Q_HOSPITALIZATION_1C_PHARMACY_ERROR
+        routing_key:  error
+      # Интеграция ТМИС Листы Назначений - 1С Аптека
+      - &AMQP_B_MEDICAL_PRESCRIPTION_CREATE
+        exchange:     *AMQP_E_MEDICAL_PRESCRIPTION
+        queue:        *AMQP_Q_MEDICAL_PRESCRIPTION_1C_PHARMACY
+        routing_key:  create
+      - &AMQP_B_MEDICAL_PRESCRIPTION_CLOSE
+        exchange:     *AMQP_E_MEDICAL_PRESCRIPTION
+        queue:        *AMQP_Q_MEDICAL_PRESCRIPTION_1C_PHARMACY
+        routing_key:  close
+      - &AMQP_B_MEDICAL_PRESCRIPTION_ERROR
+        exchange:     *AMQP_E_MEDICAL_PRESCRIPTION
+        queue:        *AMQP_Q_MEDICAL_PRESCRIPTION_1C_PHARMACY_ERROR
+        routing_key:  error
 
   system_prefs: &SYSTEM_PREFS
     # режим работы 1-стандартный, 2+ - различные интеграции. См. enum SystemMode
@@ -267,10 +339,10 @@ subsystems:
         amqp_url: *AMQP_URL
         bindings:
           invoice:
-            create: *AMQP_CREATE_BINDING_INVOICE
-            delete: *AMQP_DELETE_BINDING_INVOICE
-            refund: *AMQP_REFUND_BINDING_INVOICE
-            update: *AMQP_UPDATE_BINDING_INVOICE
+            create: *AMQP_B_INVOICE_CREATE
+            delete: *AMQP_B_INVOICE_DELETE
+            refund: *AMQP_B_INVOICE_REFUND
+            update: *AMQP_B_INVOICE_UPDATE
 
     url: *HIPPO_URL
 
@@ -634,11 +706,11 @@ subsystems:
     app:
       amqp:
         server: *AMQP_SERVER
-        user: *AMQP_USER_FINANCE
-        queue.created: *AMQP_QUEUE_INVOICE_CREATED
-        queue.deleted: *AMQP_QUEUE_INVOICE_DELETED
-        queue.refund: *AMQP_QUEUE_INVOICE_REFUND
-        error: *AMQP_ERROR_BINDING_INVOICE
+        user: *AMQP_U_FINANCE
+        queue.created: *AMQP_Q_INVOICE_CREATED
+        queue.deleted: *AMQP_Q_INVOICE_DELETED
+        queue.refund: *AMQP_Q_INVOICE_REFUND
+        error: *AMQP_B_INVOICE_ERROR
       financeWebservice:
         url: "http://127.0.0.1/Mock_1Cwebservice?wsdl"
         targetNamespace: "http://schemas.xmlsoap.org/soap/envelope"

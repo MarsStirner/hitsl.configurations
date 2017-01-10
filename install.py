@@ -65,7 +65,7 @@ def main():
             template = jinja_env.from_string(configen_config['template'])
             filename = make_filename(this, configen_name, c_extension)
             with open(filename, 'w') as fout:
-                fout.write(template.render(config, this=this))
+                fout.write(template.render(config, this=this).encode('utf-8'))
 
 
 if __name__ == "__main__":

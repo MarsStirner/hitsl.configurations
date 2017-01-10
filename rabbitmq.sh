@@ -40,41 +40,45 @@ function obtainRabbitMqAdmin() {
 
 
 function dropVhost(){
-    echo "Whoops! Drop vhost \"${VHOST}\"!!!!"
-    rabbitmqadmin -H ${HOST} -P ${PORT} -u ${USER} -p ${PASSWORD} delete vhost name="${VHOST}"
-}
-
-function declareVhost(){
-    rabbitmqadmin -H ${HOST} -P ${PORT} -u ${USER} -p ${PASSWORD} declare vhost name="${VHOST}"
+    read -p "Drop current vhost \"${VHOST}\" (y\\n)?" yn
+    case ${yn} in
+        [Yy]* )
+            rabbitmqadmin -H ${HOST} -P ${PORT} -u ${USER} -p ${PASSWORD} delete vhost name="${VHOST}";
+            echo "Whoops! Dropped vhost \"${VHOST}\"!!!!";
+            rabbitmqadmin -H ${HOST} -P ${PORT} -u ${USER} -p ${PASSWORD} declare vhost name="${VHOST}";
+            echo "And create new vhost \"${VHOST}\"";
+            break;;
+        [Nn]* )
+            echo "Keep calm! We dont do this.";
+            break;;
+    esac
     rabbitmqadmin -H ${HOST} -P ${PORT} -u ${USER} -p ${PASSWORD} list vhosts
 }
 
 function declareUsers() {
     echo 'Declare users'
     {% for u in common.amqp.users %}
-        rabbitmqadmin -H ${HOST} -P ${PORT} -u ${USER} -p ${PASSWORD} \
-          declare user name='{{ u.username }}' password='{{ u.password }}'  tags='{{ u.tags | join(',') }}'
-        rabbitmqadmin -H ${HOST} -P ${PORT} -u ${USER} -p ${PASSWORD} \
-          declare permission vhost="${VHOST}" user='{{ u.username }}' configure='.*' write='.*' read='.*'
+        rabbitmqadmin -H ${HOST} -P ${PORT} -u ${USER} -p ${PASSWORD} declare user name='{{ u.username }}' password='{{ u.password }}'  tags='{{ u.tags | join(',') }}';
+        {% for up in u.permissions %}
+            rabbitmqadmin -H ${HOST} -P ${PORT} -u ${USER} -p ${PASSWORD} declare permission vhost='{{ up.vhost }}' user='{{ u.username }}' configure='{{ up.conf }}' write='{{ up.write }}' read='{{ up.read }}';
+        {% endfor %}
     {% endfor %}
-    rabbitmqadmin -H ${HOST} -P ${PORT} -V ${VHOST} -u ${USER} -p ${PASSWORD} list users
+    rabbitmqadmin -H ${HOST} -P ${PORT} -V ${VHOST} -u ${USER} -p ${PASSWORD} list users;
     rabbitmqadmin -H ${HOST} -P ${PORT} -V ${VHOST} -u ${USER} -p ${PASSWORD} list permissions
 }
 
 function declareExchanges() {
     echo 'Declare exchanges'
     {% for e in common.amqp.exchanges %}
-        rabbitmqadmin -H ${HOST} -P ${PORT} -V ${VHOST} -u ${USER} -p ${PASSWORD} \
-          declare exchange name='{{ e.name }}' type='{{ e.type }}'  durable={{ e.durable|lower }} auto_delete={{ e.auto_delete|lower }} arguments='{{ e.arguments | tojson }}'
+       rabbitmqadmin -H ${HOST} -P ${PORT} -V ${VHOST} -u ${USER} -p ${PASSWORD} declare exchange name='{{ e.name }}' type='{{ e.type }}' durable={{ e.durable|lower }} auto_delete={{ e.auto_delete|lower }} arguments='{{ e.arguments|tojson }}'
     {% endfor %}
     rabbitmqadmin -H ${HOST} -P ${PORT} -V ${VHOST} -u ${USER} -p ${PASSWORD} list exchanges
 }
 
 function declareQueues() {
-    echo 'Declare queues'
+    echo 'Declare queues';
     {% for q in common.amqp.queues %}
-        rabbitmqadmin -H ${HOST} -P ${PORT} -V ${VHOST} -u ${USER} -p ${PASSWORD} \
-          declare queue name='{{ q.name }}' durable={{ q.durable|lower }} auto_delete={{ q.auto_delete|lower }} arguments='{{ q.arguments | tojson }}'
+        rabbitmqadmin -H ${HOST} -P ${PORT} -V ${VHOST} -u ${USER} -p ${PASSWORD} declare queue name='{{ q.name }}' durable={{ q.durable| lower }} auto_delete={{ q.auto_delete|lower }} arguments='{{ q.arguments | tojson }}'
     {% endfor %}
     rabbitmqadmin -H ${HOST} -P ${PORT} -V ${VHOST} -u ${USER} -p ${PASSWORD} list queues
 }
@@ -82,20 +86,15 @@ function declareQueues() {
 function declareBindings() {
     echo 'Declare bindings'
     {% for b in common.amqp.bindings %}
-        rabbitmqadmin -H ${HOST} -P ${PORT} -V ${VHOST} -u ${USER} -p ${PASSWORD} \
-          declare binding source='{{ b.exchange }}' destination='{{ b.queue }}' routing_key='{{ b.routing_key }}'
+        rabbitmqadmin -H ${HOST} -P ${PORT} -V ${VHOST} -u ${USER} -p ${PASSWORD} declare binding source='{{ b.exchange }}' destination='{{ b.queue }}' routing_key='{{ b.routing_key }}'
     {% endfor %}
     rabbitmqadmin -H ${HOST} -P ${PORT} -V ${VHOST} -u ${USER} -p ${PASSWORD} list bindings
 }
 
-
-
-
 # Here we go!
-echo "Start declaring objects to RabbitMQ at $HOST"
+echo "Start declaring objects to RabbitMQ at ${HOST}";
 obtainRabbitMqAdmin
 dropVhost
-declareVhost
 declareUsers
 declareExchanges
 declareQueues
