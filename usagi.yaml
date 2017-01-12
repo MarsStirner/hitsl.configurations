@@ -347,6 +347,9 @@ subsystems:
             create: *AMQP_B_HOSPITALIZATION_CREATE
             close: *AMQP_B_HOSPITALIZATION_CLOSE
             moving: *AMQP_B_HOSPITALIZATION_MOVING
+          med_prescription:
+            create: *AMQP_B_MEDICAL_PRESCRIPTION_CREATE
+            close: *AMQP_B_MEDICAL_PRESCRIPTION_CLOSE
 
     url: *HIPPO_URL
 
