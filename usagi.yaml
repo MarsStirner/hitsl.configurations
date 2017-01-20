@@ -110,7 +110,7 @@ common:
         permissions:
          - vhost: "/"
            conf:  ''
-           write: '^exchange\.1c_pharmacy\..*$'
+           write: '^exchange\.(1c_pharmacy\..*|tmis\.hospitalization|tmis\.medical_prescription)$'
            read:  '^queue\.tmis\.1c_pharmacy\..*$'
     amqp_url: &AMQP_URL amqp://guest:guest@localhost:5672//
     admin: *AMQP_U_ADMIN
@@ -718,10 +718,40 @@ subsystems:
         queue.deleted: *AMQP_Q_INVOICE_DELETED
         queue.refund: *AMQP_Q_INVOICE_REFUND
         error: *AMQP_B_INVOICE_ERROR
-      financeWebservice:
+      webservice:
         url: "http://127.0.0.1/Mock_1Cwebservice?wsdl"
         targetNamespace: "http://schemas.xmlsoap.org/soap/envelope"
         name: "Exchange_MIS"
+
+ # Модуль с настройками для интеграции между ТМИС и 1С Аптекой в части госпитализаций
+  mq_integration_pharmacy_hospitalization:
+    app:
+      amqp:
+        server: *AMQP_SERVER
+        user: *AMQP_U_1C_PHARMACY
+        queue: *AMQP_Q_HOSPITALIZATION_1C_PHARMACY
+        binding:
+         create: *AMQP_B_HOSPITALIZATION_CREATE
+         close: *AMQP_B_HOSPITALIZATION_CLOSE
+         moving: *AMQP_B_HOSPITALIZATION_MOVING
+        error: *AMQP_B_HOSPITALIZATION_ERROR
+      webservice:
+        url: "http://127.0.0.1/PharmacyHospitalization?wsdl"
+        targetNamespace: "http://schemas.xmlsoap.org/soap/envelope"
+        name: "PharmacyHospitalization"
+
+ # Модуль с настройками для интеграции между ТМИС и 1С Аптекой в части Листов Назначений (ЛН)
+  mq_integration_pharmacy_medical_prescription:
+    app:
+      amqp:
+        server: *AMQP_SERVER
+        user: *AMQP_U_1C_PHARMACY
+        queue: *AMQP_Q_MEDICAL_PRESCRIPTION_1C_PHARMACY
+        error: *AMQP_B_MEDICAL_PRESCRIPTION_ERROR
+      webservice:
+        url: "http://127.0.0.1/PharmacyMedicalPrescription?wsdl"
+        targetNamespace: "http://schemas.xmlsoap.org/soap/envelope"
+        name: "PharmacyMedicalPrescription"
 
 
   sphinx:
