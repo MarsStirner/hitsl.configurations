@@ -240,6 +240,7 @@ common:
     ui:
       # angularjs блокирует ссылки с протоколами, которые не относятся к разрешенным
       # frontend_additional_href_protocols: ''
+      ttj_barcode_len:
       extended_search:
         common_access_curator:
         common_access_doctor:
