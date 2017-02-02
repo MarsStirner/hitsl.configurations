@@ -104,14 +104,23 @@ common:
             write: ".*"
             read:  ".*"
       - &AMQP_U_1C_PHARMACY
-        username: "1c_pharmacy"
-        password: "mq_pharmacy"
+        username: '1c_pharmacy'
+        password: 'mq_pharmacy'
         tags: []
         permissions:
-         - vhost: "/"
-           conf:  ''
-           write: '^exchange\.(1c_pharmacy\..*|tmis\.hospitalization|tmis\.medical_prescription)$'
-           read:  '^queue\.tmis\.1c_pharmacy\..*$'
+          - vhost: '/'
+            conf:  ''
+            write: '^exchange\.(1c_pharmacy\..*|tmis\.hospitalization|tmis\.medical_prescription)$'
+            read:  '^queue\.tmis\.1c_pharmacy\..*$'
+      - &AMQP_U_BIOMATERIAL
+        username: "tmis_biomaterial"
+        password: "blood_and_faeces"
+        tags: []
+        permissions:
+          - vhost: '/'
+            conf:  ''
+            write: '^exchange.tmis.biological_material$'
+            read:  '^queue.tmis.biological_material.*$'
     amqp_url: &AMQP_URL amqp://guest:guest@localhost:5672//
     admin: *AMQP_U_ADMIN
     # Список обменников [префикс yaml-якорей AMQP_E_*]
@@ -137,6 +146,11 @@ common:
         auto_delete: false
         arguments:
           x-delayed-type: topic
+      # Обменник для работы с Биоматериалами
+      - name: &AMQP_E_BIOMATERIAL                          exchange.tmis.biological_material
+        type: topic
+        durable: true
+        auto_delete: false
     # Список очередей [префикс yaml-якорей AMQP_Q_*]
     queues:
       - name: &AMQP_Q_INVOICE_CREATED                      queue.tmis.finance.invoice.created
@@ -170,6 +184,19 @@ common:
       - name: &AMQP_Q_MEDICAL_PRESCRIPTION_1C_PHARMACY_ERROR queue.tmis.1c_pharmacy.medical_prescription.error
         durable: true
         auto_delete: false
+      # Интеграция ТМИС Биоматериалы - ЛИСы
+      - name: &AMQP_Q_BIOMATERIAL                           queue.tmis.biological_material
+        durable: true
+        auto_delete: false
+        arguments:
+          x-message-ttl: 86400000
+          x-dead-letter-exchange: *AMQP_E_BIOMATERIAL
+          x-dead-letter-routing-key: expire
+      - name: &AMQP_Q_BIOMATERIAL_RESULT                    queue.tmis.biological_material.result
+        durable: true
+        auto_delete: false
+        arguments:
+          x-message-ttl: 86400000
     # Связки между обменниками и очередями с использованием текстового ключа [префикс yaml-якорей AMQP_B_*]
     bindings:
       # Invoice bindings
@@ -223,6 +250,27 @@ common:
         exchange:     *AMQP_E_MEDICAL_PRESCRIPTION
         queue:        *AMQP_Q_MEDICAL_PRESCRIPTION_1C_PHARMACY_ERROR
         routing_key:  error
+      # Интеграция ТМИС Биоматериалы - ЛИС
+      - &AMQP_B_BIOMATERIAL_SEND
+        exchange:     *AMQP_E_BIOMATERIAL
+        queue:        *AMQP_Q_BIOMATERIAL
+        routing_key:  send
+      - &AMQP_B_BIOMATERIAL_EXPIRE
+        exchange:     *AMQP_E_BIOMATERIAL
+        queue:        *AMQP_Q_BIOMATERIAL_RESULT
+        routing_key:  expire
+      - &AMQP_B_BIOMATERIAL_NO_LAB
+        exchange:     *AMQP_E_BIOMATERIAL
+        queue:        *AMQP_Q_BIOMATERIAL_RESULT
+        routing_key:  laboratory_not_assigned
+      - &AMQP_B_BIOMATERIAL_LAB_WAIT
+        exchange:     *AMQP_E_BIOMATERIAL
+        queue:        *AMQP_Q_BIOMATERIAL_RESULT
+        routing_key:  laboratory_wait
+      - &AMQP_B_BIOMATERIAL_LAB_SENDED
+        exchange:     *AMQP_E_BIOMATERIAL
+        queue:        *AMQP_Q_BIOMATERIAL_RESULT
+        routing_key:  laboratory_sended
 
   system_prefs: &SYSTEM_PREFS
     # режим работы 1-стандартный, 2+ - различные интеграции. См. enum SystemMode
@@ -754,6 +802,19 @@ subsystems:
         targetNamespace: "http://schemas.xmlsoap.org/soap/envelope"
         name: "PharmacyMedicalPrescription"
 
+  # Модуль с настройками для интеграции c Лабораториями
+  mq_integration_biomaterial:
+    app:
+      amqp:
+        server: *AMQP_SERVER
+        user: *AMQP_U_BIOMATERIAL
+        request:
+          send: *AMQP_B_BIOMATERIAL_SEND
+        response:
+          no_research_type: *AMQP_B_BIOMATERIAL_NO_LAB
+          no_laboratory: *AMQP_B_BIOMATERIAL_NO_LAB
+          wait: *AMQP_B_BIOMATERIAL_LAB_WAIT
+          sended: *AMQP_B_BIOMATERIAL_LAB_SENDED
 
   sphinx:
     configens:
