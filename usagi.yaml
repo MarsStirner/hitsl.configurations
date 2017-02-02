@@ -294,6 +294,7 @@ common:
         common_access_doctor:
     regional:
       uses_regional_services: false
+      close_yesterday_checkups: false
 
 deployment:
   base_dir: .
