@@ -66,11 +66,10 @@ source patient
     sql_db      = {{ common.sphinx.DB_NAME }}
     sql_port    = {{ common.sphinx.DB_PORT }}
 
-    #       sql_query_pre = SET CHARACTER_SET_RESULTS=utf8
     sql_query_pre = SET NAMES utf8
     sql_query_pre = SET CHARACTER SET utf8
 
-    sql_query               = \
+    sql_query = \
     SELECT c.id as id, CAST(c.id AS CHAR) as code, c.lastName, c.firstName, c.patrName, c.SNILS, DATE_FORMAT(c.birthDate, '%d.%m.%Y') as birthDate_f1, DATE_FORMAT(c.birthDate, '%e.%m.%Y') as birthDate_f2, \
     GROUP_CONCAT(CONCAT_WS(' ', cd.serial, cd.number) SEPARATOR '; ') as document, \
     GROUP_CONCAT(CONCAT_WS(' ', cp.serial, cp.number) SEPARATOR '; ') as policy \
@@ -84,39 +83,63 @@ source patient
     sql_field_string        = lastName
     sql_field_string        = firstName
     sql_field_string        = patrName
+
     sql_query_info          = SELECT * FROM Client WHERE id=$id
 }
-
-
-index patient
+source patient_p0 : patient
 {
-    source                  = patient
-    path                    = /var/lib/sphinxsearch/data_{{ deployment.prefix }}/patient
-    docinfo                 = extern
-    charset_type            = utf-8
-    min_word_len            = 2
-    min_prefix_len           = 2
+    sql_query = \
+    SELECT c.id as id, CAST(c.id AS CHAR) as code, c.lastName, c.firstName, c.patrName, c.SNILS, DATE_FORMAT(c.birthDate, '%d.%m.%Y') as birthDate_f1, DATE_FORMAT(c.birthDate, '%e.%m.%Y') as birthDate_f2, \
+    GROUP_CONCAT(CONCAT_WS(' ', cd.serial, cd.number) SEPARATOR '; ') as document, \
+    GROUP_CONCAT(CONCAT_WS(' ', cp.serial, cp.number) SEPARATOR '; ') as policy \
+    FROM Client c \
+    LEFT JOIN ClientDocument cd ON cd.client_id=c.id \
+    LEFT JOIN ClientPolicy cp ON cp.client_id=c.id \
+    WHERE c.deleted = 0 AND c.id % 2 = 0\
+    GROUP BY c.id
+
+    sql_query_info          = SELECT * FROM Client WHERE id=$id and id % 2 = 0
+}
+source patient_p1 : patient
+{
+    sql_query = \
+    SELECT c.id as id, CAST(c.id AS CHAR) as code, c.lastName, c.firstName, c.patrName, c.SNILS, DATE_FORMAT(c.birthDate, '%d.%m.%Y') as birthDate_f1, DATE_FORMAT(c.birthDate, '%e.%m.%Y') as birthDate_f2, \
+    GROUP_CONCAT(CONCAT_WS(' ', cd.serial, cd.number) SEPARATOR '; ') as document, \
+    GROUP_CONCAT(CONCAT_WS(' ', cp.serial, cp.number) SEPARATOR '; ') as policy \
+    FROM Client c \
+    LEFT JOIN ClientDocument cd ON cd.client_id=c.id \
+    LEFT JOIN ClientPolicy cp ON cp.client_id=c.id \
+    WHERE c.deleted = 0 AND c.id % 2 = 1\
+    GROUP BY c.id
+
+    sql_query_info          = SELECT * FROM Client WHERE id=$id and id % 2 = 1
+}
+
+index patient_p0
+{
+    type = plain
+    source = patient_p0
+    path = /var/lib/sphinxsearch/data_{{ deployment.prefix }}/patient_p0
+    docinfo = extern
+    charset_type = utf-8
+    min_word_len = 2
+    min_prefix_len = 2
 
     ignore_chars = U+2E
     charset_table = 0..9, A..Z->a..z, _, a..z,  \
     U+410..U+42F->U+430..U+44F, U+430..U+44F, U+401->U+451, U+451
-
-    #       morphology              = stem_enru
-    #       enable_star             = 1
 }
-
-#index testrt
-#{
-#   type            = rt
-#   rt_mem_limit        = 32M
-#
-#   path            = /var/lib/sphinxsearch/data/testrt
-#   charset_type        = utf-8
-#
-#   rt_field        = title
-#   rt_field        = content
-#   rt_attr_uint        = gid
-#}
+index patient_p1 : patient_p0
+{
+    source = patient_p1
+    path = /var/lib/sphinxsearch/data_{{ deployment.prefix }}/patient_p1
+}
+index patient
+{
+    type = distributed
+    local = patient_p0
+    local = patient_p1
+}
 
 
 source event_service
@@ -699,7 +722,7 @@ index risar_events_short
 
 indexer
 {
-    mem_limit       = 32M
+    mem_limit       = 64M
 }
 
 
@@ -717,4 +740,5 @@ searchd
     unlink_old      = 1
     workers         = threads # for RT to work
     binlog_path     = /var/lib/sphinxsearch/data_{{ deployment.prefix }}
+    dist_threads    = 2
 }
