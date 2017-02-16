@@ -310,14 +310,14 @@ source risar_events
     Person.org_id AS org_id,\
     Organisation.shortName AS org_name,\
     CAST(LEFT(Organisation.area, 8) AS UNSIGNED) AS AREA,\
-    CONCAT_WS(',', LEFT(Organisation.area, 2), LEFT(Organisation.area, 5), LEFT(Organisation.area, 8)) as AREAS, \
+    CONCAT_WS(',', LEFT(Organisation.area, 2), LEFT(Organisation.area, 5), LEFT(Organisation.area, 8)) as AREAS,\
     CONCAT_WS(' ', Client.lastName, Client.firstName, Client.patrName) AS NAME,\
     GROUP_CONCAT(DISTINCT CONCAT_WS(' ', ClientDocument.serial, ClientDocument.number) SEPARATOR '; ') AS document,\
     rbDocumentType.name AS document_type,\
     GROUP_CONCAT(DISTINCT CONCAT_WS(' ', rbPolicyType.name, ClientPolicy.serial, ClientPolicy.number) SEPARATOR '; ') AS policy,\
     Client.SNILS AS snils,\
     DATE_FORMAT(Client.birthDate, '%d.%m.%Y') AS birth_date,\
-    Client.age AS client_age,\
+    FLOOR(DATEDIFF(CURDATE(), Client.birthDate) / 365.25) AS client_age,\
     apv_wg.value AS client_work_code,\
     CONCAT_WS(' ', Person.lastName, Person.firstName, Person.patrName) AS person_name,\
     apv_risk.value AS risk,\
@@ -370,7 +370,7 @@ source risar_events
            NULL)\
     ) AS diag_closed_mkb_ids,\
     /* EventMeasure overdue */\
-    em.has_overdue,\
+    em.event_id IS NOT NULL AS has_overdue,\
     em.has_overdue_lab_test,\
     em.has_overdue_func_test,\
     em.has_overdue_checkup,\
@@ -380,13 +380,13 @@ source risar_events
     /* event person control*/\
     epc.persons AS epc_persons,\
     /* missed checkups */\
-    IF(`EventLatestInspectionsWithNextDate`.next_date <= curdate(), 1, 0) AS has_missed_checkups\
+    EventsMissedInspections.event_id IS NOT NULL AS has_missed_checkups\
     FROM\
     Event\
     JOIN Person ON Person.id = Event.execPerson_id\
     JOIN EventType ON (Event.eventType_id = EventType.id)\
     JOIN rbRequestType rbrt ON (EventType.requestType_id = rbrt.id AND rbrt.code IN ('pregnancy', 'gynecological'))\
-    JOIN (SELECT *, FLOOR(DATEDIFF(CURDATE(), Client.birthDate) / 365.25) AS age FROM Client) AS Client ON Client.id = Event.client_id\
+    JOIN Client ON Client.id = Event.client_id\
     LEFT JOIN Organisation ON Organisation.id = Person.org_id\
     LEFT JOIN ClientPolicy ON (ClientPolicy.client_id = Client.id AND ClientPolicy.deleted = 0)\
     LEFT JOIN rbPolicyType ON (ClientPolicy.policyType_id = rbPolicyType.id)\
@@ -408,24 +408,6 @@ source risar_events
         epicr.event_id = Event.id AND\
         epicr.actionType_id IN (SELECT id FROM ActionType WHERE ActionType.flatCode = 'epicrisis') AND\
         epicr.deleted = 0)\
-    /* EventMeasure overdue */\
-    LEFT JOIN (\
-        SELECT \
-            em.event_id,\
-            Sum(IF(em.status = 5, 1, 0)) > 0 AS has_overdue,\
-            Sum(IF(em.status = 5 and rbmt.code = 'lab_test', 1, 0)) > 0 AS has_overdue_lab_test,\
-            Sum(IF(em.status = 5 and rbmt.code = 'func_test', 1, 0)) > 0 AS has_overdue_func_test,\
-            Sum(IF(em.status = 5 and rbmt.code = 'checkup', 1, 0)) > 0 AS has_overdue_checkup,\
-            Sum(IF(em.status = 5 and rbmt.code = 'healthcare', 1, 0)) > 0 AS has_overdue_healthcare,\
-            Sum(IF(em.status = 5 and rbmt.code = 'hospitalization', 1, 0)) > 0 AS has_overdue_hospitalization,\
-            Sum(IF(em.status = 5 and rbmt.code = 'social_preventiv', 1, 0)) > 0 AS has_overdue_social_preventiv\
-        FROM EventMeasure em\
-            LEFT JOIN ExpertSchemeMeasure esm ON esm.id = em.schemeMeasure_id\
-            JOIN Measure m ON (m.id = esm.measure_id or m.id = em.measure_id)\
-            JOIN rbMeasureType rbmt ON m.measureType_id = rbmt.id\
-        WHERE em.deleted = 0\
-        GROUP BY em.event_id) em\
-    ON (em.event_id = Event.id)\
     /* event person control */\
     LEFT JOIN (\
         SELECT epc.event_id AS event_id, GROUP_CONCAT(epc.person_id) AS persons\
@@ -517,12 +499,12 @@ source risar_events
                 GROUP BY ds.id\
             ) max_dg_dates ON (dg.setDate = max_dg_dates.max_date AND dg.diagnosis_id = max_dg_dates.diagnosis_id)\
             JOIN Diagnosis ds ON dg.diagnosis_id = ds.id\
-            WHERE ds.deleted = 0\
+            WHERE ds.deleted = 0 AND dg.deleted = 0\
             GROUP BY ds.id\
         ) max_dg_ids ON (dg.id = max_dg_ids.diagnostic_id AND dg.diagnosis_id = max_dg_ids.diagnosis_id)\
         JOIN Diagnosis ds ON dg.diagnosis_id = ds.id\
         JOIN MKB ON MKB.DiagID = dg.MKB\
-        WHERE ds.deleted = 0\
+        WHERE ds.deleted = 0 AND dg.deleted = 0\
         GROUP BY ds.id\
     ) Diags ON (\
         Event.client_id = Diags.client_id AND\
@@ -530,15 +512,13 @@ source risar_events
         COALESCE(Diags.ds_endDate, CURDATE()) >= Event.setDate\
     )\
     /* missed checkups */\
-    LEFT OUTER JOIN (\
+    LEFT JOIN (\
         SELECT\
-            `Action`.id AS action_id,\
-            `Action`.event_id AS event_id, `Action`.`begDate` AS beg_date,\
-            `Action`.`endDate` AS end_date, `ActionProperty_Date`.value AS next_date\
+            `Action`.event_id AS event_id\
         FROM `Action`\
         INNER JOIN (\
             SELECT max(`Action`.id) AS action_id, `Action`.event_id AS event_id\
-            FROM `ActionType`, `Action` INNER JOIN (\
+            FROM `Action` INNER JOIN (\
                 SELECT max(`Action`.`begDate`) AS max_beg_date, `Event`.id AS event_id\
                 FROM `Action` INNER JOIN `Event` ON `Event`.id = `Action`.event_id\
                 INNER JOIN `EventType` ON `EventType`.id = `Event`.`eventType_id`\
@@ -549,14 +529,32 @@ source risar_events
                 GROUP BY `Event`.id\
             ) AS `MaxActionBegDates` ON `MaxActionBegDates`.max_beg_date = `Action`.`begDate`\
                 AND `MaxActionBegDates`.event_id = `Action`.event_id\
+            INNER JOIN `ActionType` ON `ActionType`.id = `Action`.`actionType_id`\
             WHERE `Action`.deleted = 0 AND `ActionType`.`flatCode` IN ("risarFirstInspection", "risarSecondInspection", "risarPCCheckUp")\
             GROUP BY `Action`.event_id\
         ) AS `EventLatestCheckups` ON `EventLatestCheckups`.action_id = `Action`.id\
         INNER JOIN `ActionProperty` ON `Action`.id = `ActionProperty`.action_id\
         INNER JOIN `ActionPropertyType` ON `ActionPropertyType`.id = `ActionProperty`.type_id\
         INNER JOIN `ActionProperty_Date` ON `ActionProperty`.id = `ActionProperty_Date`.id\
-        WHERE `ActionPropertyType`.code = "next_date"\
-    ) AS `EventLatestInspectionsWithNextDate` ON `EventLatestInspectionsWithNextDate`.event_id = `Event`.id\
+        WHERE `ActionPropertyType`.code = "next_date" AND `ActionProperty_Date`.value <= curdate()\
+    ) AS `EventsMissedInspections` ON `EventsMissedInspections`.event_id = `Event`.id\
+    /* EventMeasure overdue */\
+    LEFT JOIN (\
+        SELECT\
+            em.event_id,\
+            Sum(IF(rbmt.code = 'lab_test', 1, 0)) > 0 AS has_overdue_lab_test,\
+            Sum(IF(rbmt.code = 'func_test', 1, 0)) > 0 AS has_overdue_func_test,\
+            Sum(IF(rbmt.code = 'checkup', 1, 0)) > 0 AS has_overdue_checkup,\
+            Sum(IF(rbmt.code = 'healthcare', 1, 0)) > 0 AS has_overdue_healthcare,\
+            Sum(IF(rbmt.code = 'hospitalization', 1, 0)) > 0 AS has_overdue_hospitalization,\
+            Sum(IF(rbmt.code = 'social_preventiv', 1, 0)) > 0 AS has_overdue_social_preventiv\
+        FROM EventMeasure em\
+            LEFT JOIN ExpertSchemeMeasure esm ON esm.id = em.schemeMeasure_id\
+            JOIN Measure m ON m.id = COALESCE(esm.measure_id, em.measure_id)\
+            JOIN rbMeasureType rbmt ON m.measureType_id = rbmt.id\
+        WHERE em.deleted = 0 AND em.status = 5\
+        GROUP BY em.event_id) em\
+    ON (em.event_id = Event.id)\
     WHERE\
         Event.deleted = 0\
         AND IF(rbrt.code = 'pregnancy', CA.id IS NOT NULL, 1)\
