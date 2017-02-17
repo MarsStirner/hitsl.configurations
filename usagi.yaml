@@ -295,6 +295,9 @@ common:
     regional:
       uses_regional_services: false
       close_yesterday_checkups: false
+    # vesta_specific_search: # дополнительные параметры фильтрации справочника VESTA
+      # rbService_regional: # таблица в справочнике (коллекция)
+        # code: "^[AB]" # Регулярное выражение (Код начинается с A или B)
 
 deployment:
   base_dir: .
