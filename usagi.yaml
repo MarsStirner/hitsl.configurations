@@ -887,7 +887,7 @@ subsystems:
           not_assigned: *AMQP_B_BIOMATERIAL_NOT_ASSIGNED
           sent: *AMQP_B_BIOMATERIAL_SENT
           wait: *AMQP_B_BIOMATERIAL_WAIT
-        laboratoriesResponse: *AMQP_B_LIS_SENT
+        laboratoryResponse: *AMQP_B_LIS_SENT
       laboratories:
         HEPA: *AMQP_B_LIS_HEPA_SEND
         INNOVA: *AMQP_B_LIS_INNOVA_SEND
