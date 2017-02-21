@@ -333,8 +333,7 @@ common:
         exchange:     *AMQP_E_LABORATORY
         queue:        *AMQP_Q_LABORATORY_RESULT
         routing_key:  sent
-      
-      
+
   system_prefs: &SYSTEM_PREFS
     # режим работы 1-стандартный, 2+ - различные интеграции. См. enum SystemMode
     mode: 1
@@ -466,6 +465,8 @@ subsystems:
           med_prescription:
             create: *AMQP_B_MEDICAL_PRESCRIPTION_CREATE
             close: *AMQP_B_MEDICAL_PRESCRIPTION_CLOSE
+          biomaterial:
+            send: *AMQP_B_BIOMATERIAL_SEND
 
     url: *HIPPO_URL
 
