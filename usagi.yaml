@@ -119,8 +119,8 @@ common:
         permissions:
           - vhost: '/'
             conf:  ''
-            write: '^exchange.tmis.biological_material$'
-            read:  '^queue.tmis.biological_material.*$'
+            write: '^exchange\.(tmis\.biological_material|integration\.laboratory)$'
+            read:  '^queue\.(integration\.laboratory|tmis\.biological_material)\..*$'
     amqp_url: &AMQP_URL amqp://guest:guest@localhost:5672//
     admin: *AMQP_U_ADMIN
     # Список обменников [префикс yaml-якорей AMQP_E_*]
@@ -146,8 +146,13 @@ common:
         auto_delete: false
         arguments:
           x-delayed-type: topic
-      # Обменник для работы с Биоматериалами
+      # Обменник для работы с Биоматериалами (для ТМИС)
       - name: &AMQP_E_BIOMATERIAL                          exchange.tmis.biological_material
+        type: topic
+        durable: true
+        auto_delete: false
+      # Обменник для работы с Лабораториями (Интеграция с ЛИСАми)
+      - name: &AMQP_E_LABORATORY                           exchange.integration.laboratory
         type: topic
         durable: true
         auto_delete: false
@@ -184,19 +189,39 @@ common:
       - name: &AMQP_Q_MEDICAL_PRESCRIPTION_1C_PHARMACY_ERROR queue.tmis.1c_pharmacy.medical_prescription.error
         durable: true
         auto_delete: false
-      # Интеграция ТМИС Биоматериалы - ЛИСы
-      - name: &AMQP_Q_BIOMATERIAL                           queue.tmis.biological_material
+      # Интеграция ТМИС Биоматериалы 
+      - name: &AMQP_Q_BIOMATERIAL_REQUEST                  queue.tmis.biological_material.request
         durable: true
         auto_delete: false
         arguments:
-          x-message-ttl: 86400000
+          x-message-ttl: 3600000
           x-dead-letter-exchange: *AMQP_E_BIOMATERIAL
           x-dead-letter-routing-key: expire
-      - name: &AMQP_Q_BIOMATERIAL_RESULT                    queue.tmis.biological_material.result
+      - name: &AMQP_Q_BIOMATERIAL_RESPONSE                 queue.tmis.biological_material.response
         durable: true
         auto_delete: false
         arguments:
           x-message-ttl: 86400000
+      # Интеграция с ЛИСами
+      - name: &AMQP_Q_LABORATORY_HEPA                      queue.integration.laboratory.hepa
+        durable: true
+        auto_delete: false
+        arguments:
+          x-message-ttl: 3600000
+          x-dead-letter-exchange: *AMQP_E_LABORATORY
+          x-dead-letter-routing-key: expire
+      - name: &AMQP_Q_LABORATORY_INNOVA                    queue.integration.laboratory.innova
+        durable: true
+        auto_delete: false
+        arguments:
+          x-message-ttl: 3600000
+          x-dead-letter-exchange: *AMQP_E_LABORATORY
+          x-dead-letter-routing-key: expire
+      - name: &AMQP_Q_LABORATORY_RESULT                    queue.integration.laboratory.response
+        durable: true
+        auto_delete: false
+        arguments:
+          x-message-ttl: 3600000
     # Связки между обменниками и очередями с использованием текстового ключа [префикс yaml-якорей AMQP_B_*]
     bindings:
       # Invoice bindings
@@ -250,28 +275,69 @@ common:
         exchange:     *AMQP_E_MEDICAL_PRESCRIPTION
         queue:        *AMQP_Q_MEDICAL_PRESCRIPTION_1C_PHARMACY_ERROR
         routing_key:  error
-      # Интеграция ТМИС Биоматериалы - ЛИС
+      # Интеграция ТМИС Биоматериалы
       - &AMQP_B_BIOMATERIAL_SEND
         exchange:     *AMQP_E_BIOMATERIAL
-        queue:        *AMQP_Q_BIOMATERIAL
+        queue:        *AMQP_Q_BIOMATERIAL_REQUEST
         routing_key:  send
+      - &AMQP_B_BIOMATERIAL_RESEND
+        exchange:     *AMQP_E_BIOMATERIAL
+        queue:        *AMQP_Q_BIOMATERIAL_REQUEST
+        routing_key:  resend
       - &AMQP_B_BIOMATERIAL_EXPIRE
         exchange:     *AMQP_E_BIOMATERIAL
-        queue:        *AMQP_Q_BIOMATERIAL_RESULT
+        queue:        *AMQP_Q_BIOMATERIAL_RESPONSE
         routing_key:  expire
-      - &AMQP_B_BIOMATERIAL_NO_LAB
+      - &AMQP_B_BIOMATERIAL_ERROR
         exchange:     *AMQP_E_BIOMATERIAL
-        queue:        *AMQP_Q_BIOMATERIAL_RESULT
-        routing_key:  laboratory_not_assigned
-      - &AMQP_B_BIOMATERIAL_LAB_WAIT
+        queue:        *AMQP_Q_BIOMATERIAL_RESPONSE
+        routing_key:  error
+      - &AMQP_B_BIOMATERIAL_NOT_ASSIGNED
         exchange:     *AMQP_E_BIOMATERIAL
-        queue:        *AMQP_Q_BIOMATERIAL_RESULT
-        routing_key:  laboratory_wait
-      - &AMQP_B_BIOMATERIAL_LAB_SENDED
+        queue:        *AMQP_Q_BIOMATERIAL_RESPONSE
+        routing_key:  not_assigned
+      - &AMQP_B_BIOMATERIAL_SENT
         exchange:     *AMQP_E_BIOMATERIAL
-        queue:        *AMQP_Q_BIOMATERIAL_RESULT
-        routing_key:  laboratory_sended
-
+        queue:        *AMQP_Q_BIOMATERIAL_RESPONSE
+        routing_key:  sent
+      - &AMQP_B_BIOMATERIAL_WAIT
+        exchange:     *AMQP_E_BIOMATERIAL
+        queue:        *AMQP_Q_BIOMATERIAL_RESPONSE
+        routing_key:  wait
+      # Интеграция с ЛИСами
+      - &AMQP_B_LIS_HEPA_SEND
+        exchange:     *AMQP_E_LABORATORY
+        queue:        *AMQP_Q_LABORATORY_HEPA
+        routing_key:  send.hepa
+      - &AMQP_B_LIS_HEPA_RESEND
+        exchange:     *AMQP_E_LABORATORY
+        queue:        *AMQP_Q_LABORATORY_HEPA
+        routing_key:  resend.hepa
+      - &AMQP_B_LIS_INNOVA_SEND
+        exchange:     *AMQP_E_LABORATORY
+        queue:        *AMQP_Q_LABORATORY_INNOVA
+        routing_key:  send.innova
+      - &AMQP_B_LIS_INNOVA_RESEND
+        exchange:     *AMQP_E_LABORATORY
+        queue:        *AMQP_Q_LABORATORY_INNOVA
+        routing_key:  resend.innova
+      - &AMQP_B_LIS_ERROR
+        exchange:     *AMQP_E_LABORATORY
+        queue:        *AMQP_Q_LABORATORY_RESULT
+        routing_key:  error
+      - &AMQP_B_LIS_EXPIRE
+        exchange:     *AMQP_E_LABORATORY
+        queue:        *AMQP_Q_LABORATORY_RESULT
+        routing_key:  expire
+      - &AMQP_B_LIS_SENT
+        exchange:     *AMQP_E_LABORATORY
+        queue:        *AMQP_Q_LABORATORY_RESULT
+        routing_key:  sent
+      
+      
+      
+      
+      
   system_prefs: &SYSTEM_PREFS
     # режим работы 1-стандартный, 2+ - различные интеграции. См. enum SystemMode
     mode: 1
@@ -762,7 +828,7 @@ subsystems:
           amqp: {} # Здесь будут настройки соединения с RabbitMQ
           risar_url_root: http://localhost:6600/risar/api/integration  # корень интеграционного модуля в РИСАР
 
-  # Модуль с настройками для интеграции между ТМИС и 1С в части финансовых траназкций
+### Модуль с настройками для интеграции между ТМИС и 1С в части финансовых траназкций
   mq_integration_finance:
     app:
       amqp:
@@ -777,7 +843,7 @@ subsystems:
         targetNamespace: "http://schemas.xmlsoap.org/soap/envelope"
         name: "Exchange_MIS"
 
- # Модуль с настройками для интеграции между ТМИС и 1С Аптекой в части госпитализаций
+### Модуль с настройками для интеграции между ТМИС и 1С Аптекой в части госпитализаций
   mq_integration_pharmacy_hospitalization:
     app:
       amqp:
@@ -794,7 +860,7 @@ subsystems:
         targetNamespace: "http://schemas.xmlsoap.org/soap/envelope"
         name: "PharmacyHospitalization"
 
- # Модуль с настройками для интеграции между ТМИС и 1С Аптекой в части Листов Назначений (ЛН)
+### Модуль с настройками для интеграции между ТМИС и 1С Аптекой в части Листов Назначений (ЛН)
   mq_integration_pharmacy_medical_prescription:
     app:
       amqp:
@@ -807,7 +873,7 @@ subsystems:
         targetNamespace: "http://schemas.xmlsoap.org/soap/envelope"
         name: "PharmacyMedicalPrescription"
 
-  # Модуль с настройками для интеграции c Лабораториями
+### Модуль с настройками для интеграции c Лабораториями
   mq_integration_biomaterial:
     app:
       amqp:
@@ -815,11 +881,35 @@ subsystems:
         user: *AMQP_U_BIOMATERIAL
         request:
           send: *AMQP_B_BIOMATERIAL_SEND
+          resend: *AMQP_B_BIOMATERIAL_RESEND
         response:
-          no_research_type: *AMQP_B_BIOMATERIAL_NO_LAB
-          no_laboratory: *AMQP_B_BIOMATERIAL_NO_LAB
-          wait: *AMQP_B_BIOMATERIAL_LAB_WAIT
-          sended: *AMQP_B_BIOMATERIAL_LAB_SENDED
+          error: *AMQP_B_BIOMATERIAL_ERROR
+          not_assigned: *AMQP_B_BIOMATERIAL_NOT_ASSIGNED
+          sent: *AMQP_B_BIOMATERIAL_SENT
+          wait: *AMQP_B_BIOMATERIAL_WAIT
+        laboratoriesResponse: *AMQP_B_LIS_SENT
+      laboratories:
+        HEPA: *AMQP_B_LIS_HEPA_SEND
+        INNOVA: *AMQP_B_LIS_INNOVA_SEND
+      datasource:
+        host: 127.0.0.1
+        port: 3306
+        schema: laboratory_integration
+        username: root
+        password: root
+        rdbms: mysql
+        connectionProperties:
+          # Значение лучше передавать строкой
+          useUnicode: "true"
+          characterEncoding: "UTF-8"
+          characterSetResults: "UTF-8"
+          serverTimezone: "UTC"
+          cachePrepStmts: "true"
+          prepStmtCacheSize: "250"
+          prepStmtCacheSqlLimit: "2048"
+
+          
+
 
   sphinx:
     configens:
