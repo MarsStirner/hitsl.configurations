@@ -568,7 +568,7 @@ subsystems:
       NSI_SOAP: http://nsi.rosminzdrav.ru/wsdl/SOAP-server.v2.php?wsdl
       NSI_TOKEN: ''
 
-      CACHE_TYPE: null
+      CACHE_TYPE: 'null'
     url: *VESTA_URL
 
   simplelogs: # Подсистема журналирования
