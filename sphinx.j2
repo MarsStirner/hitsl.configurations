@@ -342,6 +342,7 @@ source risar_events
     DATE_FORMAT(Client.birthDate, '%d.%m.%Y') AS birth_date,\
     FLOOR(DATEDIFF(CURDATE(), Client.birthDate) / 365.25) AS client_age,\
     apv_wg.value AS client_work_code,\
+    apv_ftp.value AS fert_type_code,\
     CONCAT_WS(' ', Person.lastName, Person.firstName, Person.patrName) AS person_name,\
     apv_risk.value AS risk,\
     risar_radz_risk.risk_rate_id as radz_risk,\
@@ -446,6 +447,10 @@ source risar_events
     LEFT JOIN ActionPropertyType apt_wg ON (apt_wg.actionType_id = anmz.actionType_id AND apt_wg.code = 'work_group')\
     LEFT JOIN ActionProperty ap_wg ON (ap_wg.action_id = anmz.id AND ap_wg.type_id = apt_wg.id)\
     LEFT JOIN ActionProperty_ExtRef apv_wg ON (ap_wg.id = apv_wg.id)\
+    /* fertilization_type */\
+    LEFT JOIN ActionPropertyType anmz_fert_type ON (anmz_fert_type.actionType_id = anmz.actionType_id AND anmz_fert_type.code = 'fertilization_type')\
+    LEFT JOIN ActionProperty ap_ftp ON (ap_ftp.action_id = anmz.id AND ap_ftp.type_id = anmz_fert_type.id)\
+    LEFT JOIN ActionProperty_ExtRef apv_ftp ON (ap_ftp.id = apv_ftp.id)\
     /* epicrisis delivery_date */\
     LEFT JOIN ActionPropertyType apt_delivd ON (apt_delivd.actionType_id = epicr.actionType_id AND apt_delivd.code = 'delivery_date')\
     LEFT JOIN ActionProperty ap_delivd ON (ap_delivd.action_id = epicr.id AND ap_delivd.type_id = apt_delivd.id)\
@@ -588,6 +593,7 @@ source risar_events
     sql_field_string        = document
     sql_field_string        = policy
     sql_field_string        = client_work_code
+    sql_field_string        = fert_type_code
 
     sql_attr_string         = card_req_type
     sql_attr_string         = org_name
