@@ -923,9 +923,29 @@ subsystems:
           useUnicode: "false"
           characterEncoding: "latin1"
           characterSetResults: "latin1"
-      soi: "ЦКБ РАМН"
-      operator: "auto"
-
+      # Отделение по-умолчанию (если по коду не было найдено)
+      defaultSoi:  "a1aec76c-ce03-4885-b666-49a57b15b42d"
+      # Из под какого пользователя создавать заявки
+      operator: "bars"
+      # Настройки для отсылки результатов тестов в БД ТМИС
+      polling:
+        enabled: true
+        cron: "0 * * * * ?"
+        uploadPath: "http://hepaDB.blood.local/html/uploads/" #Перфикс к ссылкам (должно оканчиваться на слеш)
+        actionPropertyTypeLinkSuffix: "_link"  #Суффикс кода APT для ссылок
+        # Соединение с БД ТМИС (запись результатов напрямую, будет убрано когда-нибудь)
+        datasourceHospital:
+          host: 10.1.2.11
+          port: 3306
+          schema: gnc_160516
+          username: root
+          password: root
+          rdbms: mysql
+          connectionProperties:
+           # Значение лучше передавать строкой
+            useUnicode: "true"
+            characterEncoding: "UTF-8"
+            characterSetResults: "UTF-8"
 
 
   sphinx:
