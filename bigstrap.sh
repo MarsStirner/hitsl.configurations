@@ -1,12 +1,18 @@
 #!/bin/bash
 
-HIPPO_BRANCH=RISAR
-NEMESIS_BRANCH=develop
-CAESAR_BRANCH=develop
+RELEASE_BRANCH=RISAR-release-2.4
+HIPPO_BRANCH=${RELEASE_BRANCH}
+NEMESIS_BRANCH=${RELEASE_BRANCH}
+CAESAR_BRANCH=${RELEASE_BRANCH}
 
 for i in "$@"
 do
     case $i in
+        -r=* | --release=*)          HIPPO_BRANCH="${i#*=}"
+                                     NEMESIS_BRANCH="${i#*=}"
+                                     CAESAR_BRANCH="${i#*=}"
+                                     shift
+                                     ;;
         -hb=* | --hippo-branch=*)    HIPPO_BRANCH="${i#*=}"
                                      shift
                                      ;;
@@ -17,14 +23,13 @@ do
                                      shift
                                      ;;
         -h | --help )                echo "Установка виртуального окружения и клонирование проектов.
-Ветки приложений по умолчанию
- * hippo - RISAR
- * nemesis - develop
- * caesar - develop
-Можно переопределить через передаваемые аргументы
+Ветки приложений можно переопределить через передаваемые аргументы
  -hb=    --hippo-branch=
  -nb=    --nemesis-branch=
- -cb=    --caesar-branch="
+ -cb=    --caesar-branch=
+
+или все сразу через
+ -r=     --release="
                                      exit
                                      ;;
     esac
@@ -52,8 +57,6 @@ echo " -> hippo branch: ${HIPPO_BRANCH}"
 git clone https://stash.bars-open.ru/scm/medvtr/hippocrates.git -b ${HIPPO_BRANCH} code/hippocrates
 echo " -> caesar branch: ${CAESAR_BRANCH}"
 git clone https://stash.bars-open.ru/scm/medvtr/caesar.git -b ${CAESAR_BRANCH} code/caesar
-
-# git clone https://stash.bars-open.ru/scm/medvtr/coldstar.bouser.git code/coldstar.bouser
 
 # 4. Установить зависимости
 pip install -r requirements/hippocaesar.txt

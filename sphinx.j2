@@ -42,7 +42,7 @@ source person
 index person
 {
     source          = person
-    path            = /var/lib/sphinxsearch/data_{{ deployment.prefix }}/person
+    path            = {{ common.sphinx.INDEX_DATA_PATH }}data_{{ deployment.prefix }}/person
     docinfo         = extern
     charset_type        = utf-8
     min_word_len        = 2
@@ -119,7 +119,7 @@ index patient_p0
 {
     type = plain
     source = patient_p0
-    path = /var/lib/sphinxsearch/data_{{ deployment.prefix }}/patient_p0
+    path = {{ common.sphinx.INDEX_DATA_PATH }}data_{{ deployment.prefix }}/patient_p0
     docinfo = extern
     charset_type = utf-8
     min_word_len = 1
@@ -132,7 +132,7 @@ index patient_p0
 index patient_p1 : patient_p0
 {
     source = patient_p1
-    path = /var/lib/sphinxsearch/data_{{ deployment.prefix }}/patient_p1
+    path = {{ common.sphinx.INDEX_DATA_PATH }}data_{{ deployment.prefix }}/patient_p1
 }
 index patient
 {
@@ -241,7 +241,7 @@ SELECT @a := @a + 1 AS id, UNITED.* FROM (\
 index event_service
 {
     source                  = event_service
-    path                    = /var/lib/sphinxsearch/data_{{ deployment.prefix }}/event_service
+    path                    = {{ common.sphinx.INDEX_DATA_PATH }}data_{{ deployment.prefix }}/event_service
     docinfo                 = extern
     charset_type            = utf-8
     min_word_len            = 2
@@ -295,7 +295,7 @@ source events
 index events
 {
     source                  = events
-    path                    = /var/lib/sphinxsearch/data_{{ deployment.prefix }}/events
+    path                    = {{ common.sphinx.INDEX_DATA_PATH }}data_{{ deployment.prefix }}/events
     docinfo                 = extern
     charset_type            = utf-8
     min_word_len            = 2
@@ -652,7 +652,7 @@ source risar_events
 index risar_events
 {
     source                  = risar_events
-    path                    = /var/lib/sphinxsearch/data_{{ deployment.prefix }}/risar_events
+    path                    = {{ common.sphinx.INDEX_DATA_PATH }}data_{{ deployment.prefix }}/risar_events
     docinfo                 = extern
     charset_type            = utf-8
     min_word_len            = 2
@@ -719,7 +719,7 @@ source risar_events_short
 index risar_events_short
 {
     source                  = risar_events_short
-    path                    = /var/lib/sphinxsearch/data_{{ deployment.prefix }}/risar_events_short
+    path                    = {{ common.sphinx.INDEX_DATA_PATH }}data_{{ deployment.prefix }}/risar_events_short
     docinfo                 = extern
     charset_type            = utf-8
     min_word_len            = 1
@@ -749,6 +749,6 @@ searchd
     preopen_indexes = 1
     unlink_old      = 1
     workers         = threads # for RT to work
-    binlog_path     = /var/lib/sphinxsearch/data_{{ deployment.prefix }}
+    binlog_path     = {{ common.sphinx.INDEX_DATA_PATH }}data_{{ deployment.prefix }}
     dist_threads    = 2
 }
