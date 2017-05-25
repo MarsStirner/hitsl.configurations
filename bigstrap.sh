@@ -48,7 +48,8 @@ mkdir sphinx
 # 2. Создать Virtualenv и активировать его
 virtualenv venv
 . venv/bin/activate
-pip install pip setuptools --upgrade
+pip install pip --upgrade
+pip install setuptools --upgrade
 
 pip install pyyaml jinja2
 
