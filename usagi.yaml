@@ -41,6 +41,12 @@ common:
     SQLALCHEMY_TRACK_MODIFICATIONS: false
     SQLALCHEMY_ECHO: false
 
+    MONGO_HOST: 127.0.0.1
+    MONGO_PORT: 27017
+    MONGO_USERNAME: ''
+    MONGO_PASSWORD: ''
+    MONGO_DBNAME: nvesta
+
   user_apps: &USER_APPS
     TRFU_URL: ""
     WEBMIS10_URL: ""
@@ -561,12 +567,8 @@ subsystems:
     app: !inherit
       ancestors:
         - *UWSGI_APPS
-      MONGO_HOST: 127.0.0.1
-      MONGO_PORT: 27017
-      MONGO_USERNAME: ''
-      MONGO_PASSWORD: ''
-      MONGO_DBNAME: nvesta
 
+      MONGO_DBNAME: nvesta
       SIMPLELOGS_URL: *SIMPLELOGS_URL
       NSI_SOAP: http://nsi.rosminzdrav.ru/wsdl/SOAP-server.v2.php?wsdl
       NSI_TOKEN: ''
@@ -759,9 +761,9 @@ subsystems:
         bouser.ext.hitsl.scanner: # Сканирование
         bouser.ext.hitsl.scanner.resource:
 
-        bouser.ext.hitsl.schedule_manager: # Задачи
-          mixins:
-            - bouser.ext.hitsl.errands.sm_task.errand_statuses
+#        bouser.ext.hitsl.schedule_manager: # Задачи
+#          mixins:
+#            - bouser.ext.hitsl.errands.sm_task.errand_statuses
 
         bouser.ext.simargl: # Уведомления
           # config: /srv/infrastructure/simargl.conf
@@ -934,7 +936,7 @@ subsystems:
       polling:
         enabled: true
         cron: "0 * * * * ?"
-        uploadPath: "http://hepaDB.blood.local/html/uploads/" #Перфикс к ссылкам (должно оканчиваться на слеш)
+        uploadPath: "http://127.0.0.1" #Перфикс к ссылкам (должно оканчиваться на слеш)
         actionPropertyTypeLinkSuffix: "_link"  #Суффикс кода APT для ссылок
         # Соединение с БД ТМИС (запись результатов напрямую, будет убрано когда-нибудь)
         datasourceHospital:
