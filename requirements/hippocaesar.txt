@@ -11,6 +11,7 @@ Flask-Beaker
 Flask-Login
 Flask-Principal
 mysql-python
+dateutils
 sphinxit
 jsonschema
 blinker
